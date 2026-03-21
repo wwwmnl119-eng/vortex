@@ -41,7 +41,9 @@ function makeAvatar(username, phone) {
   return String(username || phone || "U").trim().charAt(0).toUpperCase();
 }
 
-app.use("/", express.static("web"));
+const path = require("path");
+
+app.use("/", express.static(path.join(__dirname, "web")));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
