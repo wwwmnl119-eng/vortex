@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vortex Text Messenger</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="logo">Vortex</div>
+      <div class="subtitle">text messenger</div>
+      <input id="phoneInput" placeholder="phone number">
+      <input id="passwordInput" type="password" placeholder="password">
+      <button class="primary-btn" onclick="auth()">continue</button>
+      <div class="hint">новый номер = регистрация, существующий = вход</div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-title">Vortex</div>
+        <button class="ghost-btn mini" onclick="logout()">logout</button>
+      </div>
+
+      <div class="me-card">
+        <div class="avatar big" id="meAvatar">U</div>
+        <div>
+          <div class="me-name">your phone</div>
+          <div class="me-phone" id="mePhone">-</div>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <input id="findPhoneInput" placeholder="find by number">
+        <button class="primary-btn small" onclick="findUser()">find</button>
+        <div id="findResult" class="find-result"></div>
+      </div>
+
+      <div class="chat-list" id="chatList"></div>
+    </aside>
+
+    <main class="chat-panel">
+      <header class="chat-header">
+        <div class="chat-head-left">
+          <div class="avatar" id="peerAvatar">?</div>
+          <div>
+            <div class="peer-name" id="peerName">no chat selected</div>
+            <div class="peer-status" id="peerStatus">find or choose a number</div>
+          </div>
+        </div>
+      </header>
+
+      <section class="messages" id="messages"></section>
+
+      <footer class="composer">
+        <input id="msgInput" placeholder="write message...">
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
