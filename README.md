@@ -1,13 +1,5 @@
-# Vortex
+# Vortex TG-style update
 
-Repository structure for the Vortex messenger project.
-
-## Folders
-- `backend/` — Node.js backend for Render
-- `android/` — native Android app project
-- `updates/` — update metadata for APK auto-update
-
-## Notes
-- APK files should go to GitHub Releases, not into the repository
-- `updates/version.json` should point to the latest APK release
-- `MONGO_URL` should be stored in Render Environment Variables
+- `backend/` — Telegram-web-like web client + Node backend
+- `android/` — Telegram-style Android starter
+- `updates/version.json` — APK update metadata

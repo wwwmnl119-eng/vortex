@@ -1,1 +1,57 @@
-<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Vortex Web</title><link rel='stylesheet' href='style.css'></head><body><h1>Vortex Web</h1><p>Replace this folder with your actual web client.</p></body></html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vortex Web</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">Vortex</div>
+      <div class="auth-subtitle">Telegram-style text messenger</div>
+      <input id="phoneInput" placeholder="Phone number" />
+      <input id="passwordInput" type="password" placeholder="Password" />
+      <button class="primary-btn" onclick="auth()">Continue</button>
+      <div class="auth-hint">Новый номер = регистрация, существующий = вход</div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Vortex</div>
+        <button class="ghost-btn" onclick="logout()">Logout</button>
+      </div>
+      <div class="me-card">
+        <div class="avatar large" id="meAvatar">U</div>
+        <div><div class="me-label">your number</div><div class="me-phone" id="mePhone">-</div></div>
+      </div>
+      <div class="search-card">
+        <input id="findPhoneInput" placeholder="Find by number" />
+        <button class="primary-btn small" onclick="findUser()">Find</button>
+        <div id="findResult" class="find-result"></div>
+      </div>
+      <div class="chat-list" id="chatList"></div>
+    </aside>
+
+    <main class="chat-shell">
+      <header class="chat-header">
+        <div class="chat-peer">
+          <div class="avatar" id="peerAvatar">?</div>
+          <div><div class="peer-name" id="peerName">No chat selected</div><div class="peer-status" id="peerStatus">Find a user or choose a contact</div></div>
+        </div>
+      </header>
+      <section class="messages-wrap"><div class="messages" id="messages"></div></section>
+      <footer class="composer">
+        <input id="msgInput" placeholder="Write message..." />
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>

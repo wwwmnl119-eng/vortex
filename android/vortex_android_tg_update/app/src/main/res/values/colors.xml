@@ -1,0 +1,11 @@
+<resources>
+    <color name="bg">#0E1621</color>
+    <color name="panel">#17212B</color>
+    <color name="chat_bg">#0B141A</color>
+    <color name="bubble_me">#2B5278</color>
+    <color name="bubble_other">#182533</color>
+    <color name="accent">#5C8FC8</color>
+    <color name="accent2">#7A6CFF</color>
+    <color name="text">#EAF2FF</color>
+    <color name="muted">#89A0B8</color>
+</resources>
