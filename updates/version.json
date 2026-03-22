@@ -1,6 +1,6 @@
 {
-  "versionCode": 1,
-  "versionName": "0.0.1",
-  "apkUrl": "https://github.com/USERNAME/vortex/releases/download/v0.0.1/app.apk",
-  "notes": "telegram-style text update"
+  "versionCode": 2,
+  "versionName": "0.0.2",
+  "apkUrl": "https://github.com/wwwmnl119-eng/vortex/releases/download/v0.0.2/Vortex-0.0.2.apk",
+  "notes": "first signed release"
 }
