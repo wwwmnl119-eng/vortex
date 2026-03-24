@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Vortex Mobile</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0E1621" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Vortex" />
+  <link rel="stylesheet" href="/mobile/style.css" />
+</head>
+<body>
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">Vortex</div>
+      <div class="auth-subtitle">mobile</div>
+      <input id="phoneInput" placeholder="Phone number">
+      <input id="passwordInput" type="password" placeholder="Password">
+      <button id="authBtn">Continue</button>
+      <div class="auth-hint">Новый номер = регистрация, существующий = вход</div>
+    </div>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <div>
+        <div class="header-title">Vortex</div>
+        <div class="header-subtitle" id="mePhone">not logged</div>
+      </div>
+      <button class="head-btn" id="logoutBtn">⎋</button>
+    </header>
+
+    <section class="search-card">
+      <input id="findPhoneInput" placeholder="Find by number">
+      <button id="findBtn">Find</button>
+      <div id="findResult" class="find-result"></div>
+    </section>
+
+    <section class="contacts" id="contacts"></section>
+
+    <section class="chat" id="chat">
+      <div class="message other">Добро пожаловать в Vortex Mobile</div>
+    </section>
+
+    <footer class="input-bar">
+      <input id="messageInput" type="text" placeholder="Сообщение..." />
+      <button id="sendBtn" type="button">➤</button>
+    </footer>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/mobile/app.js"></script>
+</body>
+</html>

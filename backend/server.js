@@ -15,15 +15,23 @@ mongoose.connect(MONGO_URL)
 
 const User = mongoose.model("User", new mongoose.Schema({
   phone: { type: String, unique: true, index: true },
+  username: { type: String, default: "" },
   passwordHash: String,
   avatar: String,
+  role: {
+    type: String,
+    enum: ["user", "beta", "moderator", "admin"],
+    default: "user"
+  },
   createdAt: { type: Date, default: Date.now }
 }));
+
 const Contact = mongoose.model("Contact", new mongoose.Schema({
   owner: { type: String, index: true },
   peer: { type: String, index: true },
   createdAt: { type: Date, default: Date.now }
 }));
+
 const Message = mongoose.model("Message", new mongoose.Schema({
   from: { type: String, index: true },
   to: { type: String, index: true },
@@ -34,31 +42,72 @@ const Message = mongoose.model("Message", new mongoose.Schema({
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+app.use("/mobile", express.static(path.join(__dirname, "web", "mobile")));
+app.get("/mobile", (_req, res) => {
+  res.sendFile(path.join(__dirname, "web", "mobile", "index.html"));
+});
+
+app.use("/admin", express.static(path.join(__dirname, "web", "admin")));
 app.use(express.static(path.join(__dirname, "web")));
-app.use("/updates", express.static(path.join(__dirname, "..", "updates")));
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-function normalizePhone(v) { return String(v || "").replace(/[^\d+]/g, "").trim(); }
-function avatarFromPhone(phone) { return String(phone || "U").replace(/[^\dA-Z]/gi, "").charAt(0).toUpperCase() || "U"; }
-function publicUser(user) { return { phone: user.phone, avatar: user.avatar }; }
+function normalizePhone(v) {
+  return String(v || "").replace(/[^\d+]/g, "").trim();
+}
+function avatarFromPhone(phone) {
+  return String(phone || "U").replace(/[^\dA-Z]/gi, "").charAt(0).toUpperCase() || "U";
+}
+function publicUser(user) {
+  return {
+    phone: user.phone,
+    username: user.username || "",
+    avatar: user.avatar,
+    role: user.role || "user"
+  };
+}
+function hasRole(user, roles) {
+  return !!user && roles.includes(user.role);
+}
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/health", (_req, res) => {
+  res.json({ ok: true });
+});
 
 app.post("/auth", async (req, res) => {
   try {
     const phone = normalizePhone(req.body.phone);
     const password = String(req.body.password || "");
-    if (!phone || !password) return res.status(400).json({ error: "phone and password required" });
+    const username = String(req.body.username || "").trim();
+
+    if (!phone || !password) {
+      return res.status(400).json({ error: "phone and password required" });
+    }
+
     let user = await User.findOne({ phone });
+
     if (!user) {
       const passwordHash = await bcrypt.hash(password, 10);
-      user = await User.create({ phone, passwordHash, avatar: avatarFromPhone(phone) });
+      user = await User.create({
+        phone,
+        username,
+        passwordHash,
+        avatar: avatarFromPhone(phone),
+        role: "user"
+      });
       return res.json({ ok: true, mode: "registered", user: publicUser(user) });
     }
+
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).json({ error: "wrong password" });
+
+    if (username && !user.username) {
+      user.username = username;
+      await user.save();
+    }
+
     res.json({ ok: true, mode: "login", user: publicUser(user) });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -75,12 +124,16 @@ app.get("/users/find/:phone", async (req, res) => {
 app.post("/contacts/add", async (req, res) => {
   const owner = normalizePhone(req.body.owner);
   const peer = normalizePhone(req.body.peer);
+
   if (!owner || !peer) return res.status(400).json({ error: "owner and peer required" });
   if (owner === peer) return res.status(400).json({ error: "cannot add yourself" });
+
   const peerUser = await User.findOne({ phone: peer });
   if (!peerUser) return res.status(404).json({ error: "user not found" });
+
   const exists = await Contact.findOne({ owner, peer });
   if (!exists) await Contact.create({ owner, peer });
+
   res.json({ ok: true, peer: publicUser(peerUser) });
 });
 
@@ -89,15 +142,68 @@ app.get("/contacts/:owner", async (req, res) => {
   const rows = await Contact.find({ owner }).sort({ createdAt: -1 });
   const phones = rows.map(r => r.peer);
   const users = await User.find({ phone: { $in: phones } });
+
   const map = new Map(users.map(u => [u.phone, u]));
-  res.json(phones.map(p => map.get(p)).filter(Boolean).map(publicUser));
+  const result = phones.map(p => map.get(p)).filter(Boolean).map(publicUser);
+  res.json(result);
 });
 
 app.get("/messages/:a/:b", async (req, res) => {
   const a = normalizePhone(req.params.a);
   const b = normalizePhone(req.params.b);
-  const items = await Message.find({ $or: [{ from: a, to: b }, { from: b, to: a }] }).sort({ createdAt: 1 });
+  const items = await Message.find({
+    $or: [{ from: a, to: b }, { from: b, to: a }]
+  }).sort({ createdAt: 1 });
   res.json(items);
+});
+
+// ADMIN
+app.get("/admin/users", async (req, res) => {
+  const me = normalizePhone(req.query.me);
+  const admin = await User.findOne({ phone: me });
+
+  if (!hasRole(admin, ["admin"])) {
+    return res.status(403).json({ error: "no access" });
+  }
+
+  const users = await User.find().sort({ createdAt: -1 });
+  res.json(users.map(publicUser));
+});
+
+app.post("/admin/set-role", async (req, res) => {
+  const me = normalizePhone(req.body.me);
+  const target = normalizePhone(req.body.target);
+  const role = String(req.body.role || "").trim();
+
+  const admin = await User.findOne({ phone: me });
+  if (!hasRole(admin, ["admin"])) {
+    return res.status(403).json({ error: "no access" });
+  }
+
+  if (!["user", "beta", "moderator", "admin"].includes(role)) {
+    return res.status(400).json({ error: "bad role" });
+  }
+
+  const user = await User.findOne({ phone: target });
+  if (!user) return res.status(404).json({ error: "not found" });
+
+  user.role = role;
+  await user.save();
+
+  res.json({ ok: true, user: publicUser(user) });
+});
+
+app.post("/admin/delete-message", async (req, res) => {
+  const me = normalizePhone(req.body.me);
+  const id = String(req.body.id || "");
+
+  const mod = await User.findOne({ phone: me });
+  if (!hasRole(mod, ["admin", "moderator"])) {
+    return res.status(403).json({ error: "no access" });
+  }
+
+  await Message.findByIdAndDelete(id);
+  res.json({ ok: true });
 });
 
 io.on("connection", socket => {
@@ -105,11 +211,18 @@ io.on("connection", socket => {
     const from = normalizePhone(payload.from);
     const to = normalizePhone(payload.to);
     const text = String(payload.text || "").trim();
+
     if (!from || !to || !text) return;
+
     const msg = await Message.create({ from, to, text });
     io.emit("message", msg);
   });
 });
 
-app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "web", "index.html")));
-server.listen(PORT, () => console.log("Vortex backend running on port", PORT));
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(__dirname, "web", "index.html"));
+});
+
+server.listen(PORT, () => {
+  console.log("Vortex backend running on port", PORT);
+});

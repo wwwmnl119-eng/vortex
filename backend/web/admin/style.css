@@ -1,0 +1,57 @@
+:root{
+  --bg:#0e1621;
+  --panel:#17212b;
+  --line:#22303d;
+  --text:#eaf2ff;
+  --muted:#89a0b8;
+  --accent:#5c8fc8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+}
+.page{max-width:1000px;margin:0 auto;padding:20px}
+.topbar{margin-bottom:20px}
+.title{font-size:28px;font-weight:700}
+.sub{margin-top:6px;color:var(--muted)}
+.card,.user{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:18px;
+}
+.card{
+  padding:14px;
+  display:flex;
+  gap:10px;
+  margin-bottom:16px;
+}
+.card input{
+  flex:1;
+  border:none;
+  outline:none;
+  border-radius:12px;
+  padding:12px 14px;
+  background:#101923;
+  color:var(--text);
+}
+button{
+  border:none;
+  border-radius:12px;
+  padding:10px 14px;
+  cursor:pointer;
+  background:var(--accent);
+  color:#fff;
+}
+.users{display:flex;flex-direction:column;gap:10px}
+.user{
+  padding:14px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+}
+.meta{display:flex;flex-direction:column;gap:6px}
+.role{color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
