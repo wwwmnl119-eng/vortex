@@ -1,7 +1,7 @@
 {
   "latestVersionCode": 3,
   "latestVersionName": "0.0.3",
-  "minSupportedVersionCode": 2,
-  "apkUrl": "https://github.com/wwwmnl119-eng/vortex/releases/download/v0.0.3/Vortex-0.0.3.apk",
+  "minSupportedVersionCode": 3,
+  "apkUrl": "https://github.com/wwwmnl119-eng/vortex/releases/download/v0.0.3/0.0.3vortex.apk",
   "notes": "новый дизайн, улучшенная система обновлений, поддержка обязательного обновления"
 }
