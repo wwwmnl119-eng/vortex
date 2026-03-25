@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Vortex Mobile</title>
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#0E1621" />
+  <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Vortex" />
   <link rel="stylesheet" href="/mobile/style.css" />
 </head>
 <body>
   <div id="authScreen" class="auth-screen">
     <div class="auth-card">
-      <div class="auth-logo">Vortex</div>
-      <div class="auth-subtitle">mobile</div>
+      <img src="/icon-192.png" class="brand-logo big" alt="Vortex" />
+      <div class="auth-title">Vortex</div>
+      <div class="auth-subtitle">phone + password</div>
       <input id="phoneInput" placeholder="Phone number">
       <input id="passwordInput" type="password" placeholder="Password">
       <button id="authBtn">Continue</button>
@@ -23,31 +24,97 @@
     </div>
   </div>
 
-  <div class="app">
-    <header class="header">
-      <div>
-        <div class="header-title">Vortex</div>
-        <div class="header-subtitle" id="mePhone">not logged</div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-left">
+        <img src="/icon-192.png" class="brand-logo" alt="Vortex" />
+        <div class="brand">Vortex</div>
       </div>
-      <button class="head-btn" id="logoutBtn">⎋</button>
+      <button class="icon-btn" id="themeToggleBtn">🌙</button>
     </header>
 
-    <section class="search-card">
-      <input id="findPhoneInput" placeholder="Find by number">
-      <button id="findBtn">Find</button>
-      <div id="findResult" class="find-result"></div>
-    </section>
+    <main class="screen">
+      <section id="tabChats" class="tab-panel active">
+        <div class="search-wrap">
+          <div class="search-box">
+            <span class="search-icon">⌕</span>
+            <input id="chatSearchInput" placeholder="Поиск чатов" />
+          </div>
+        </div>
+        <div id="chatList" class="chat-list"></div>
+        <button class="fab" id="fabOpenContacts" title="Новый чат">✚</button>
+      </section>
 
-    <section class="contacts" id="contacts"></section>
+      <section id="tabContacts" class="tab-panel">
+        <div class="section-pad">
+          <div class="search-box">
+            <span class="search-icon">⌕</span>
+            <input id="findPhoneInput" placeholder="Найти по номеру" />
+          </div>
+          <button class="wide-btn" id="findBtn">Найти</button>
+          <div id="findResult" class="info-text"></div>
+        </div>
+        <div id="contactsList" class="contact-list"></div>
+      </section>
 
-    <section class="chat" id="chat">
-      <div class="message other">Добро пожаловать в Vortex Mobile</div>
-    </section>
+      <section id="tabSettings" class="tab-panel">
+        <div class="card-list">
+          <div class="card-item">
+            <div class="card-title">Аккаунт</div>
+            <div class="card-sub" id="settingsPhone">not logged</div>
+          </div>
+          <div class="card-item">
+            <div class="card-title">Тема</div>
+            <div class="card-sub">Светлая / тёмная</div>
+          </div>
+          <button class="card-btn danger" id="logoutBtn">Выйти</button>
+        </div>
+      </section>
 
-    <footer class="input-bar">
-      <input id="messageInput" type="text" placeholder="Сообщение..." />
-      <button id="sendBtn" type="button">➤</button>
-    </footer>
+      <section id="tabProfile" class="tab-panel">
+        <div class="profile-wrap">
+          <div class="profile-avatar" id="profileAvatar">V</div>
+          <div class="profile-name" id="profileName">Vortex user</div>
+          <div class="profile-phone" id="profilePhone">not logged</div>
+        </div>
+      </section>
+    </main>
+
+    <div id="chatView" class="chat-view hidden">
+      <header class="chat-header">
+        <button class="icon-btn" id="backToChatsBtn">←</button>
+        <div class="chat-header-meta">
+          <div class="chat-header-name" id="chatHeaderName">Chat</div>
+          <div class="chat-header-sub" id="chatHeaderSub">last seen recently</div>
+        </div>
+      </header>
+
+      <section id="messages" class="messages"></section>
+
+      <footer class="composer">
+        <input id="messageInput" type="text" placeholder="Сообщение" />
+        <button id="sendBtn">➤</button>
+      </footer>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="Chats">
+        <span class="nav-icon">💬</span>
+        <span class="nav-label">Чаты</span>
+      </button>
+      <button class="nav-item" data-tab="Contacts">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Контакты</span>
+      </button>
+      <button class="nav-item" data-tab="Settings">
+        <span class="nav-icon">⚙</span>
+        <span class="nav-label">Настройки</span>
+      </button>
+      <button class="nav-item" data-tab="Profile">
+        <span class="nav-icon">🖼</span>
+        <span class="nav-label">Профиль</span>
+      </button>
+    </nav>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

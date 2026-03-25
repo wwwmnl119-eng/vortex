@@ -1,6 +1,7 @@
 {
-  "versionCode": 2,
-  "versionName": "0.0.2",
-  "apkUrl": "https://github.com/wwwmnl119-eng/vortex/releases/download/v0.0.2/Vortex-0.0.2.apk",
-  "notes": "first signed release"
+  "latestVersionCode": 3,
+  "latestVersionName": "0.0.3",
+  "minSupportedVersionCode": 2,
+  "apkUrl": "https://github.com/wwwmnl119-eng/vortex/releases/download/v0.0.3/Vortex-0.0.3.apk",
+  "notes": "новый дизайн, улучшенная система обновлений, поддержка обязательного обновления"
 }
