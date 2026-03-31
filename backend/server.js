@@ -20,7 +20,7 @@ const User = mongoose.model("User", new mongoose.Schema({
   avatar: String,
   role: {
     type: String,
-    enum: ["user", "beta", "moderator", "admin"],
+    enum: ["user", "beta", "moderator", "delover", "admin"],
     default: "user"
   },
   createdAt: { type: Date, default: Date.now }
@@ -39,6 +39,30 @@ const Message = mongoose.model("Message", new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }));
 
+
+const Channel = mongoose.model("Channel", new mongoose.Schema({
+  slug: { type: String, unique: true, index: true },
+  title: String,
+  verified: { type: Boolean, default: false },
+  description: String,
+  createdAt: { type: Date, default: Date.now }
+}));
+
+const ChannelMessage = mongoose.model("ChannelMessage", new mongoose.Schema({
+  channelSlug: { type: String, index: true },
+  text: String,
+  createdBy: { type: String, index: true, default: "system" },
+  createdAt: { type: Date, default: Date.now }
+}));
+
+
+const ChannelComment = mongoose.model("ChannelComment", new mongoose.Schema({
+  postId: { type: String, index: true },
+  from: { type: String, index: true },
+  text: String,
+  createdAt: { type: Date, default: Date.now }
+}));
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -50,6 +74,36 @@ app.get("/mobile", (_req, res) => {
 
 app.use("/admin", express.static(path.join(__dirname, "web", "admin")));
 app.use(express.static(path.join(__dirname, "web")));
+
+
+async function ensureSystemChannel() {
+  let channel = await Channel.findOne({ slug: "vortex-official" });
+  if (!channel) {
+    channel = await Channel.create({
+      slug: "vortex-official",
+      title: "Vortex Offical",
+      verified: true,
+      description: "Закреплённый канал проекта"
+    });
+  } else {
+    let changed = false;
+    if (channel.title !== "Vortex Offical") { channel.title = "Vortex Offical"; changed = true; }
+    if (!channel.verified) { channel.verified = true; changed = true; }
+    if (channel.description !== "Закреплённый канал проекта") { channel.description = "Закреплённый канал проекта"; changed = true; }
+    if (changed) await channel.save();
+  }
+
+  const count = await ChannelMessage.countDocuments({ channelSlug: "vortex-official" });
+  if (!count) {
+    await ChannelMessage.create({
+      channelSlug: "vortex-official",
+      text: "Добро пожаловать в Vortex. Здесь будут обновления, новости и важные объявления.",
+      createdBy: "system"
+    });
+  }
+}
+
+ensureSystemChannel().catch(err => console.error("System channel init error:", err.message));
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
@@ -157,6 +211,75 @@ app.get("/messages/:a/:b", async (req, res) => {
   res.json(items);
 });
 
+
+
+app.get("/channels", async (_req, res) => {
+  const rows = await Channel.find().sort({ createdAt: 1 });
+  res.json(rows);
+});
+
+app.get("/channel-messages/:slug", async (req, res) => {
+  const slug = String(req.params.slug || "").trim();
+  const rows = await ChannelMessage.find({ channelSlug: slug }).sort({ createdAt: 1 });
+  res.json(rows);
+});
+
+app.post("/admin/channel-send", async (req, res) => {
+  const me = normalizePhone(req.body.me);
+  const slug = String(req.body.slug || "").trim();
+  const text = String(req.body.text || "").trim();
+
+  const admin = await User.findOne({ phone: me });
+  if (!hasRole(admin, ["admin", "delover"])) {
+    return res.status(403).json({ error: "no access" });
+  }
+
+  if (!slug || !text) {
+    return res.status(400).json({ error: "slug and text required" });
+  }
+
+  const channel = await Channel.findOne({ slug });
+  if (!channel) return res.status(404).json({ error: "channel not found" });
+
+  const msg = await ChannelMessage.create({
+    channelSlug: slug,
+    text,
+    createdBy: me
+  });
+
+  io.emit("channel-message", msg);
+  res.json({ ok: true, message: msg });
+});
+
+
+
+app.get("/channel-comments/:postId", async (req, res) => {
+  const postId = String(req.params.postId || "").trim();
+  if (!postId) return res.status(400).json({ error: "postId required" });
+  const rows = await ChannelComment.find({ postId }).sort({ createdAt: 1 });
+  res.json(rows);
+});
+
+app.post("/channel-comments/send", async (req, res) => {
+  const from = normalizePhone(req.body.from);
+  const postId = String(req.body.postId || "").trim();
+  const text = String(req.body.text || "").trim();
+
+  if (!from || !postId || !text) {
+    return res.status(400).json({ error: "from, postId and text required" });
+  }
+
+  const user = await User.findOne({ phone: from });
+  if (!user) return res.status(404).json({ error: "user not found" });
+
+  const post = await ChannelMessage.findById(postId);
+  if (!post) return res.status(404).json({ error: "post not found" });
+
+  const comment = await ChannelComment.create({ postId, from, text });
+  io.emit("channel-comment", comment);
+  res.json({ ok: true, comment });
+});
+
 // ADMIN
 app.get("/admin/users", async (req, res) => {
   const me = normalizePhone(req.query.me);
@@ -180,7 +303,7 @@ app.post("/admin/set-role", async (req, res) => {
     return res.status(403).json({ error: "no access" });
   }
 
-  if (!["user", "beta", "moderator", "admin"].includes(role)) {
+  if (!["user", "beta", "moderator", "delover", "admin"].includes(role)) {
     return res.status(400).json({ error: "bad role" });
   }
 
