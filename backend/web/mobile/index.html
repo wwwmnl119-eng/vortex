@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Vortex" />
-  <link rel="stylesheet" href="/mobile/style.css" />
+  <link rel="stylesheet" href="/mobile/style.css?v=channelfix2" />
 </head>
 <body>
   <div id="authScreen" class="auth-screen">
@@ -61,7 +61,7 @@
         <div class="card-list">
           <div class="card-item">
             <div class="card-title">Аккаунт</div>
-            <div class="card-sub" id="settingsPhone">not logged</div>
+            <div class="card-sub" id="settingsPhone">not logged</div><div class="card-sub" id="settingsRole">role: guest</div>
           </div>
           <div class="card-item">
             <div class="card-title">Тема</div>
@@ -97,6 +97,28 @@
       </footer>
     </div>
 
+
+<div id="commentsView" class="comments-view hidden">
+  <header class="chat-header">
+    <button class="icon-btn" id="backFromCommentsBtn">←</button>
+    <div class="chat-header-meta">
+      <div class="chat-header-name">Комментарии</div>
+      <div class="chat-header-sub" id="commentsHeaderSub">Обсуждение поста</div>
+    </div>
+  </header>
+
+  <section class="comment-post-wrap">
+    <div id="commentPostCard" class="comment-post-card"></div>
+  </section>
+
+  <section id="commentsList" class="messages comments-list"></section>
+
+  <footer class="composer">
+    <input id="commentInput" type="text" placeholder="Написать комментарий" />
+    <button id="commentSendBtn">➤</button>
+  </footer>
+</div>
+
     <nav class="bottom-nav">
       <button class="nav-item active" data-tab="Chats">
         <span class="nav-icon">💬</span>
@@ -118,6 +140,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/mobile/app.js"></script>
+  <script src="/mobile/app.js?v=channelfix2"></script>
 </body>
 </html>

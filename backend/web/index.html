@@ -6,7 +6,7 @@
   <title>Vortex</title>
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffffff" />
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css?v=desktopchannel1" />
 </head>
 <body>
   <div id="authScreen" class="auth-screen">
@@ -98,11 +98,29 @@
       <footer class="composer">
         <input id="messageInput" placeholder="Сообщение" />
         <button id="sendBtn" class="send-btn">➤</button>
-      </footer>
-    </main>
+        </footer>
+
+  <section id="commentsPanel" class="comments-panel hidden">
+    <header class="comments-head">
+      <button id="closeCommentsBtn" class="ghost-btn">←</button>
+      <div>
+        <div class="chat-name">Комментарии</div>
+        <div class="chat-sub" id="commentsSub">Обсуждение поста</div>
+      </div>
+    </header>
+    <div class="comment-post-wrap">
+      <div id="commentPostCard" class="comment-post-card"></div>
+    </div>
+    <section id="commentsList" class="messages comments-messages"></section>
+    <footer class="composer">
+      <input id="commentInput" placeholder="Написать комментарий" />
+      <button id="commentSendBtn" class="send-btn">➤</button>
+    </footer>
+  </section>
+</main>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/ui.js"></script>
+  <script src="/ui.js?v=desktopchannel1"></script>
 </body>
 </html>

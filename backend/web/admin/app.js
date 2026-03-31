@@ -22,6 +22,7 @@ async function loadUsers() {
       </div>
       <div class="actions">
         <button onclick="setRole('${u.phone}','admin')">admin</button>
+        <button onclick="setRole('${u.phone}','delover')">delover</button>
         <button onclick="setRole('${u.phone}','moderator')">mod</button>
         <button onclick="setRole('${u.phone}','beta')">beta</button>
         <button onclick="setRole('${u.phone}','user')">user</button>
@@ -41,4 +42,20 @@ async function setRole(target, role) {
   });
 
   loadUsers();
+}
+
+
+async function sendChannelPost() {
+  const me = document.getElementById("me").value.trim();
+  const text = document.getElementById("channelText").value.trim();
+  if (!me || !text) return;
+  const res = await fetch("/admin/channel-send", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ me, slug: "vortex-official", text })
+  });
+  const data = await res.json();
+  if (!res.ok) return alert(data.error || "send error");
+  document.getElementById("channelText").value = "";
+  alert("Пост отправлен");
 }

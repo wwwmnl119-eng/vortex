@@ -92,3 +92,21 @@ body.theme-dark .messages{background:radial-gradient(circle at 1px 1px, rgba(255
 .empty-state{margin:auto;text-align:center}
 .empty-title{margin-top:10px;font-size:22px;font-weight:700;color:var(--brand)}
 @media (max-width:980px){.app{grid-template-columns:1fr}.chat-shell{display:none}}
+
+
+.channel-title-row{display:flex;align-items:center;gap:6px}
+.verified-mark{color:var(--brand);font-weight:700}
+.post-card{display:flex;flex-direction:column;gap:8px}
+.post-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.comment-btn{border:none;background:rgba(42,157,244,.12);color:var(--brand);padding:8px 12px;border-radius:14px;font-weight:600;cursor:pointer}
+.comment-btn:hover{opacity:.9}
+.post-author{color:var(--muted);font-size:13px}
+.comments-panel{position:absolute;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;z-index:15}
+.comments-panel.hidden{display:none}
+.comments-head{height:72px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:12px}
+.comment-post-wrap{padding:12px;border-bottom:1px solid var(--line);background:var(--panel)}
+.comment-post-card{background:var(--incoming);padding:14px;border-radius:16px;box-shadow:var(--shadow)}
+.comment-meta{margin-top:6px;color:var(--muted);font-size:12px}
+.comments-messages{background:var(--wall)}
+.chat-shell{position:relative}
+@media (max-width:980px){.comments-panel{position:fixed;inset:0;width:100%;border-left:none}}
