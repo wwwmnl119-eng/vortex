@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 const CACHE_NAME = "vortex-tg-theme-v3-desktopchannel";
 const ASSETS = [
   "/",
   "/index.html",
   "/style.css?v=desktopchannel1",
   "/ui.js?v=desktopchannel1",
+=======
+const CACHE_NAME = "vortex-tg-theme-v2-channelfix";
+const ASSETS = [
+  "/",
+  "/index.html",
+  "/style.css",
+  "/ui.js",
+>>>>>>> 47b59dd5e7fe77d77e08c3f471166b8babfe5049
   "/mobile",
   "/mobile/index.html",
   "/mobile/style.css?v=channelfix2",
