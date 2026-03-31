@@ -91,3 +91,16 @@ body.theme-dark .messages{background:radial-gradient(circle at 1px 1px, rgba(255
 .composer{flex:0 0 auto;display:flex;gap:10px;align-items:center;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--composer);border-top:1px solid var(--line)}
 .composer input{flex:1;min-width:0;background:rgba(120,120,128,.12);border-radius:22px;padding:13px 16px}
 .composer button{width:48px;height:48px;background:var(--brand);color:#fff;font-size:18px}
+
+
+.post-card{display:flex;flex-direction:column;gap:8px}
+.post-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.comment-btn{border:none;background:rgba(42,157,244,.12);color:var(--brand-dark);padding:8px 12px;border-radius:14px;font-weight:600;cursor:pointer}
+.post-author{color:var(--muted);font-size:13px}
+.comments-view{position:absolute;inset:0;background:#efece6;display:flex;flex-direction:column;z-index:31}
+body.theme-dark .comments-view{background:#0b141a}
+.comments-view.hidden{display:none}
+.comment-post-wrap{padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.comment-post-card{background:var(--incoming);padding:12px 14px;border-radius:16px;color:var(--text)}
+.comment-meta{margin-top:6px;color:var(--muted);font-size:12px}
+.comments-list{padding-top:10px}
