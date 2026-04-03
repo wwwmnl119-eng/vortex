@@ -1,4 +1,3 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const http = require("http");
@@ -12,7 +11,17 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "web")));
 
-mongoose.connect(process.env.MONGO_URI);
+const mongoUri =
+  process.env.MONGO_URI ||
+  process.env.MONGO_URL ||
+  process.env.DATABASE_URL;
+
+if (!mongoUri) {
+  console.error("Mongo URI env var missing. Set MONGO_URI (or MONGO_URL).");
+  process.exit(1);
+}
+
+mongoose.connect(mongoUri);
 
 const User = mongoose.model("User", new mongoose.Schema({
   phone:String,
@@ -39,4 +48,4 @@ app.post("/admin/channel-send", async (req,res)=>{
   res.json({ok:true});
 });
 
-server.listen(3000);
+server.listen(process.env.PORT || 3000);
