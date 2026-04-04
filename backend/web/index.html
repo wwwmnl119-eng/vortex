@@ -1,24 +1,38 @@
 
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Vortex</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="app">
-  <div class="sidebar">
-    <h2>Vortex</h2>
-    <input placeholder="Поиск">
-    <div id="chats"></div>
-  </div>
-  <div class="chat">
-    <div id="messages"></div>
-    <input id="msg" placeholder="Сообщение">
-    <button onclick="send()">➤</button>
+
+<div id="auth" class="screen">
+  <div class="auth-box">
+    <h1>Vortex</h1>
+    <input id="phone" placeholder="Phone">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Continue</button>
   </div>
 </div>
+
+<div id="app" class="hidden">
+  <div class="sidebar">
+    <h2>Vortex</h2>
+    <input id="search" placeholder="Поиск">
+    <div id="chatList"></div>
+  </div>
+
+  <div class="chat">
+    <div id="messages"></div>
+    <div class="input">
+      <input id="msg">
+      <button onclick="send()">➤</button>
+    </div>
+  </div>
+</div>
+
 <script src="ui.js"></script>
 </body>
 </html>

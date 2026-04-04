@@ -1,71 +1,58 @@
 
-const express = require("express");
-const mongoose = require("mongoose");
-const http = require("http");
-const { Server } = require("socket.io");
-const path = require("path");
-const bcrypt = require("bcryptjs");
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const express=require("express");
+const mongoose=require("mongoose");
+const path=require("path");
+const app=express();
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "web")));
+app.use(express.static(path.join(__dirname,"web")));
 
-const mongoUri =
-  process.env.MONGO_URI ||
-  process.env.MONGO_URL ||
-  process.env.DATABASE_URL;
+mongoose.connect(process.env.MONGO_URI);
 
-if (!mongoUri) {
-  console.error("Mongo URI missing");
-  process.exit(1);
-}
+const User=mongoose.model("User",new mongoose.Schema({phone:String,passwordHash:String}));
+const Contact=mongoose.model("Contact",new mongoose.Schema({owner:String,peer:String}));
+const Message=mongoose.model("Message",new mongoose.Schema({from:String,to:String,text:String}));
+const ChannelMessage=mongoose.model("ChannelMessage",new mongoose.Schema({channelSlug:String,text:String}));
 
-mongoose.connect(mongoUri);
+const bcrypt=require("bcryptjs");
 
-// ===== MODELS =====
-const User = mongoose.model("User", new mongoose.Schema({
-  phone: { type: String, unique: true },
-  passwordHash: String,
-  role: { type: String, default: "user" }
-}));
-
-// ===== AUTH FIX =====
-app.post("/auth", async (req, res) => {
-  try {
-    const { phone, password } = req.body;
-
-    if (!phone || !password) {
-      return res.status(400).json({ error: "missing data" });
-    }
-
-    let user = await User.findOne({ phone });
-
-    // регистрация
-    if (!user) {
-      const hash = await bcrypt.hash(password, 10);
-      user = await User.create({
-        phone,
-        passwordHash: hash,
-        role: "user"
-      });
-
-      return res.json({ ok: true, mode: "register" });
-    }
-
-    // вход
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) {
-      return res.status(401).json({ error: "wrong password" });
-    }
-
-    return res.json({ ok: true, mode: "login" });
-
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+app.post("/auth",async(req,res)=>{
+  let {phone,password}=req.body;
+  let user=await User.findOne({phone});
+  if(!user){
+    let hash=await bcrypt.hash(password,10);
+    await User.create({phone,passwordHash:hash});
+    return res.json({ok:true});
   }
+  let ok=await bcrypt.compare(password,user.passwordHash);
+  if(!ok)return res.json({error:"wrong"});
+  res.json({ok:true});
 });
 
-server.listen(process.env.PORT || 3000);
+app.get("/contacts/:me",async(req,res)=>{
+  let list=await Contact.find({owner:req.params.me});
+  let users=await User.find({phone:{$in:list.map(x=>x.peer)}});
+  res.json(users);
+});
+
+app.get("/messages/:a/:b",async(req,res)=>{
+  let msgs=await Message.find({$or:[{from:req.params.a,to:req.params.b},{from:req.params.b,to:req.params.a}]});
+  res.json(msgs);
+});
+
+app.post("/message",async(req,res)=>{
+  await Message.create(req.body);
+  res.json({ok:true});
+});
+
+app.get("/channel-messages/:slug",async(req,res)=>{
+  let msgs=await ChannelMessage.find({channelSlug:req.params.slug});
+  res.json(msgs);
+});
+
+app.post("/admin/channel-send",async(req,res)=>{
+  await ChannelMessage.create({channelSlug:req.body.slug,text:req.body.text});
+  res.json({ok:true});
+});
+
+app.listen(process.env.PORT||3000);
