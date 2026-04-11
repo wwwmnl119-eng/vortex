@@ -1,38 +1,102 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Vortex</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vortex</title>
+  <link rel="stylesheet" href="/style.css?v=vortexdesktop2" />
 </head>
 <body>
-
-<div id="auth" class="screen">
-  <div class="auth-box">
-    <h1>Vortex</h1>
-    <input id="phone" placeholder="Phone">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="login()">Continue</button>
-  </div>
-</div>
-
-<div id="app" class="hidden">
-  <div class="sidebar">
-    <h2>Vortex</h2>
-    <input id="search" placeholder="Поиск">
-    <div id="chatList"></div>
-  </div>
-
-  <div class="chat">
-    <div id="messages"></div>
-    <div class="input">
-      <input id="msg">
-      <button onclick="send()">➤</button>
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">V</div>
+      <div class="auth-title">Vortex</div>
+      <div class="auth-subtitle">phone + password</div>
+      <div class="auth-fields">
+        <input id="authPhone" placeholder="Phone number" />
+        <input id="authPassword" type="password" placeholder="Password" />
+        <button id="authBtn">Continue</button>
+      </div>
+      <div class="auth-note">Новый номер = регистрация, существующий = вход</div>
+      <div id="authError" class="auth-error hidden"></div>
     </div>
   </div>
-</div>
 
-<script src="ui.js"></script>
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand-row">
+        <div class="brand-logo">V</div>
+        <div>
+          <div class="brand-title">Vortex</div>
+          <div id="brandPhone" class="brand-subtitle">not logged</div>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <input id="searchInput" placeholder="Поиск" />
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="chats">Чаты</button>
+        <button class="tab-btn" data-tab="contacts">Контакты</button>
+        <button class="tab-btn" data-tab="settings">Настройки</button>
+      </div>
+
+      <div id="panelChats" class="panel active">
+        <div id="chatList" class="list"></div>
+      </div>
+
+      <div id="panelContacts" class="panel">
+        <div class="panel-card">
+          <div class="panel-card-title">Найти по номеру</div>
+          <div class="find-row">
+            <input id="findInput" placeholder="Телефон" />
+            <button id="findBtn">Найти</button>
+          </div>
+          <div id="findResult" class="find-result"></div>
+        </div>
+        <div id="contactsList" class="list"></div>
+      </div>
+
+      <div id="panelSettings" class="panel">
+        <div class="panel-card">
+          <div class="panel-card-title">Аккаунт</div>
+          <div id="settingsPhone" class="settings-value">not logged</div>
+        </div>
+        <div class="panel-card">
+          <div class="panel-card-title">Тема</div>
+          <div class="settings-value">Тёмная</div>
+        </div>
+        <button id="logoutBtn" class="logout-btn">Выйти</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="content-header">
+        <div class="content-header-left">
+          <div id="chatAvatar" class="content-avatar">V</div>
+          <div>
+            <div id="chatTitle" class="content-title">Vortex</div>
+            <div id="chatSubtitle" class="content-subtitle">Выбери чат слева</div>
+          </div>
+        </div>
+      </header>
+
+      <section id="messages" class="messages">
+        <div class="empty-state">
+          <div class="empty-state-title">Добро пожаловать в Vortex</div>
+          <div class="empty-state-text">Выбери чат или открой Vortex Offical ✔️</div>
+        </div>
+      </section>
+
+      <footer class="composer">
+        <input id="messageInput" placeholder="Написать сообщение" />
+        <button id="sendBtn">➤</button>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/ui.js?v=vortexdesktop2"></script>
 </body>
 </html>
