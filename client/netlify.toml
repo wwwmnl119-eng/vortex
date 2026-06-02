@@ -1,12 +1,9 @@
 [build]
-  command = "flutter build web --release"
+  command = "git clone https://github.com/flutter/flutter.git -b stable --depth 1 /opt/flutter && /opt/flutter/bin/flutter build web --release"
   publish = "build/web"
 
 [build.environment]
-  FLUTTER_VERSION = "3.32.1"
-
-[build.processing]
-  skip_processing = false
+  PATH = "/opt/flutter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 [[redirects]]
   from = "/*"
