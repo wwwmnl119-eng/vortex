@@ -1,6 +1,5 @@
 class AppConfig {
-  // 🔧 CHANGE THIS to your server IP or domain
-  static const String serverUrl = 'http://localhost:3000';
+  static const String serverUrl = 'https://vortex-w2br.onrender.com';
   static const String apiUrl = '$serverUrl/api';
 
   static const int messagePageSize = 50;
