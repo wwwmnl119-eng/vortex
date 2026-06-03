@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vortex для iOS 26 — Liquid Glass</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --blue: #2AABEE; --bg: #000; --glass: rgba(255,255,255,0.08); --glass2: rgba(255,255,255,0.12); --border: rgba(255,255,255,0.12); }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      background: #000;
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* iOS 26 gradient background */
+    .bg-gradient {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 15% 50%, rgba(120,80,255,0.4) 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 20%, rgba(42,171,238,0.35) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 80%, rgba(255,100,150,0.2) 0%, transparent 45%),
+        #0a0a1a;
+      animation: bgShift 20s ease infinite alternate;
+    }
+    @keyframes bgShift {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(30deg); }
+    }
+
+    .noise {
+      position: fixed; inset: 0; z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.5; pointer-events: none;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
+
+    /* Liquid Glass Nav */
+    nav {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 48px); max-width: 800px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      z-index: 100;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; }
+    .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .logo-icon { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #2AABEE, #7C4DFF); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .logo-text { font-size: 17px; font-weight: 700; color: white; }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link { padding: 6px 14px; border-radius: 10px; text-decoration: none; color: rgba(255,255,255,0.6); font-size: 13px; transition: all 0.2s; }
+    .nav-link:hover, .nav-link.active { color: white; background: rgba(255,255,255,0.1); }
+    .nav-cta { padding: 7px 16px; border-radius: 10px; background: rgba(42,171,238,0.8); backdrop-filter: blur(10px); color: white; font-size: 13px; font-weight: 600; text-decoration: none; border: 1px solid rgba(42,171,238,0.5); }
+
+    /* Hero */
+    .hero { padding: 130px 0 60px; text-align: center; }
+    .apple-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 18px; border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 13px; color: rgba(255,255,255,0.8);
+      margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-size: clamp(40px, 7vw, 80px);
+      font-weight: 800; line-height: 1.05;
+      letter-spacing: -2px;
+      margin-bottom: 20px;
+      background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.6) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-gradient-text {
+      background: linear-gradient(135deg, #2AABEE, #7C4DFF, #FF6B9D);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { font-size: 19px; color: rgba(255,255,255,0.5); max-width: 480px; margin: 0 auto 40px; line-height: 1.5; font-weight: 300; }
+    .hero-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 32px; border-radius: 50px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white; font-size: 17px; font-weight: 600; text-decoration: none;
+      transition: all 0.3s;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    .hero-btn:hover { transform: scale(1.02); background: rgba(255,255,255,0.15); }
+
+    /* iPhone mockup */
+    .iphone-wrap { margin: 60px auto 0; max-width: 320px; position: relative; }
+    .iphone {
+      background: linear-gradient(145deg, rgba(30,30,40,0.9), rgba(15,15,25,0.95));
+      border-radius: 50px;
+      border: 1px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+      box-shadow:
+        0 60px 120px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(255,255,255,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+      position: relative;
+    }
+    .iphone::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+      border-radius: 50px;
+      pointer-events: none; z-index: 10;
+    }
+    .iphone-top { height: 50px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; }
+    .dynamic-island { width: 100px; height: 30px; background: #000; border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .di-cam { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); }
+    .iphone-screen { background: #0a0a1a; padding: 0; }
+
+    /* Glass UI inside phone */
+    .ios-header {
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .ios-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #2AABEE, #7C4DFF); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+    .ios-name { font-size: 14px; font-weight: 600; color: white; }
+    .ios-status { font-size: 10px; color: rgba(42,171,238,0.9); }
+    .ios-msgs { padding: 12px; min-height: 220px; display: flex; flex-direction: column; gap: 6px; }
+    .im { max-width: 75%; padding: 8px 12px; border-radius: 16px; font-size: 12px; line-height: 1.4; }
+    .im.in {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-bottom-left-radius: 4px;
+      color: rgba(255,255,255,0.9);
+    }
+    .im.out {
+      background: rgba(42,171,238,0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(42,171,238,0.4);
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+      color: white;
+    }
+    .im-time { font-size: 9px; color: rgba(255,255,255,0.4); margin-top: 3px; text-align: right; }
+    .ios-input {
+      margin: 8px 12px;
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 8px 14px;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .ii-text { flex: 1; font-size: 12px; color: rgba(255,255,255,0.4); }
+    .ii-btn { width: 26px; height: 26px; border-radius: 50%; background: rgba(42,171,238,0.7); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+    .iphone-bottom { height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
+    .home-ind { width: 100px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; }
+
+    /* Glass features */
+    .glass-section { padding: 80px 0; }
+    .glass-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 48px; }
+    .glass-card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(40px) saturate(150%);
+      -webkit-backdrop-filter: blur(40px) saturate(150%);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 28px;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .glass-card:hover { transform: translateY(-6px) scale(1.01); border-color: rgba(255,255,255,0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15); }
+    .gc-icon { font-size: 36px; margin-bottom: 16px; }
+    .gc-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.3px; }
+    .gc-desc { color: rgba(255,255,255,0.45); font-size: 14px; line-height: 1.5; font-weight: 300; }
+
+    .section-title { font-size: 34px; font-weight: 700; text-align: center; margin-bottom: 12px; letter-spacing: -1px; }
+    .section-sub { text-align: center; color: rgba(255,255,255,0.4); font-size: 16px; font-weight: 300; }
+
+    /* Glass footer */
+    footer {
+      margin: 0 24px 24px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: center;
+      color: rgba(255,255,255,0.3);
+      font-size: 13px;
+      position: relative; z-index: 2;
+    }
+    .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .footer-links a { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 13px; }
+    .footer-links a:hover { color: white; }
+  </style>
+</head>
+<body>
+<div class="bg-gradient"></div>
+<div class="noise"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo"><div class="logo-icon">✈️</div><span class="logo-text">Vortex</span></a>
+    <div class="nav-links">
+      <a href="/pages/web.html" class="nav-link">Web</a>
+      <a href="/pages/mobile.html" class="nav-link">Mobile</a>
+      <a href="/pages/ios.html" class="nav-link active">iOS 26</a>
+    </div>
+    <a href="/" class="nav-cta">Открыть Web</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="hero">
+    <div class="apple-badge">🍎 Разработано для iOS 26 · Liquid Glass</div>
+    <h1>Vortex<br><span class="hero-gradient-text">для iOS 26</span></h1>
+    <p>Переработан с нуля для нового языка дизайна Apple. Жидкое стекло, живые эффекты, Dynamic Island.</p>
+    <a href="#" class="hero-btn">🍎 Скоро в App Store</a>
+
+    <div class="iphone-wrap">
+      <div class="iphone">
+        <div class="iphone-top">
+          <div class="dynamic-island">
+            <div class="di-cam"></div>
+            <div style="width:6px;height:6px;background:rgba(42,171,238,0.6);border-radius:50%"></div>
+            <div class="di-cam"></div>
+          </div>
+        </div>
+        <div class="iphone-screen">
+          <div class="ios-header">
+            <div class="ios-avatar">A</div>
+            <div>
+              <div class="ios-name">Алексей ✓</div>
+              <div class="ios-status">в сети</div>
+            </div>
+          </div>
+          <div class="ios-msgs">
+            <div class="im in">Привет! 👋<div class="im-time">12:30</div></div>
+            <div class="im out">Привет! Как дела?<div class="im-time">12:30 ✓✓</div></div>
+            <div class="im in">Тестирую Vortex на iOS 26 🔥<div class="im-time">12:31</div></div>
+            <div class="im out">Liquid Glass выглядит 🔥<div class="im-time">12:31 ✓✓</div></div>
+            <div class="im in">Согласен! Лучше Telegram 😄<div class="im-time">12:32</div></div>
+          </div>
+          <div class="ios-input">
+            <span class="ii-text">Сообщение...</span>
+            <div class="ii-btn">➤</div>
+          </div>
+        </div>
+        <div class="iphone-bottom"><div class="home-ind"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-section">
+    <h2 class="section-title">Создан для iOS 26</h2>
+    <p class="section-sub">Каждый элемент переработан в стиле Liquid Glass</p>
+    <div class="glass-grid">
+      <div class="glass-card"><div class="gc-icon">🫧</div><div class="gc-title">Liquid Glass UI</div><div class="gc-desc">Все элементы интерфейса используют новый материал жидкого стекла от Apple</div></div>
+      <div class="glass-card"><div class="gc-icon">🏝️</div><div class="gc-title">Dynamic Island</div><div class="gc-desc">Уведомления и звонки отображаются в Dynamic Island с живыми анимациями</div></div>
+      <div class="glass-card"><div class="gc-icon">✨</div><div class="gc-title">Живые эффекты</div><div class="gc-desc">Размытие, отражения и преломления — интерфейс реагирует на движение</div></div>
+      <div class="glass-card"><div class="gc-icon">🌙</div><div class="gc-title">Адаптивная тема</div><div class="gc-desc">Автоматически адаптируется к светлой и тёмной теме iOS</div></div>
+      <div class="glass-card"><div class="gc-icon">⚡</div><div class="gc-title">Native Swift</div><div class="gc-desc">Написан на SwiftUI с использованием новейших API iOS 26</div></div>
+      <div class="glass-card"><div class="gc-icon">🔒</div><div class="gc-title">Face ID</div><div class="gc-desc">Разблокировка и подтверждение через Face ID / Touch ID</div></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="/">Главная</a><a href="/pages/web.html">Web</a><a href="/pages/mobile.html">Mobile</a><a href="/pages/ios.html">iOS 26</a>
+  </div>
+  <p>© 2026 Vortex Messenger · Создан с ❤️</p>
+</footer>
+</body>
+</html>

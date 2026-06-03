@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import 'chat_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
@@ -17,24 +18,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _loading = true;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
     try {
       final user = await _api.getUserProfile(widget.userId);
       if (mounted) setState(() { _user = user; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
+    } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _startChat() async {
     try {
-      await _api.createDM(widget.userId);
-      if (mounted) Navigator.pop(context);
+      final chat = await _api.createDM(widget.userId);
+      if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (_) => ChatScreen(chatId: chat['id'], chatName: widget.username, targetUserId: widget.userId),
+      ));
     } catch (_) {}
   }
 
@@ -44,10 +42,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       backgroundColor: const Color(0xFF17212B),
       appBar: AppBar(
         backgroundColor: const Color(0xFF17212B),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2AABEE)),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Color(0xFF2AABEE)), onPressed: () => Navigator.pop(context)),
         title: Text(widget.username, style: const TextStyle(color: Colors.white)),
       ),
       body: _loading
@@ -55,72 +50,56 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           : _user == null
               ? const Center(child: Text('Пользователь не найден', style: TextStyle(color: Color(0xFF8B9DB5))))
               : Column(children: [
-                  // Header
                   Container(
-                    width: double.infinity,
-                    color: const Color(0xFF17212B),
+                    width: double.infinity, color: const Color(0xFF17212B),
                     padding: const EdgeInsets.symmetric(vertical: 32),
                     child: Column(children: [
                       CircleAvatar(
-                        radius: 52,
-                        backgroundColor: const Color(0xFF2AABEE),
+                        radius: 52, backgroundColor: const Color(0xFF2AABEE),
                         backgroundImage: _user!.avatarUrl != null ? NetworkImage(_user!.avatarUrl!) : null,
-                        child: _user!.avatarUrl == null
-                            ? Text(_user!.username[0].toUpperCase(),
-                                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white))
-                            : null,
+                        child: _user!.avatarUrl == null ? Text(_user!.username[0].toUpperCase(),
+                          style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)) : null,
                       ),
                       const SizedBox(height: 12),
-                      Text(_user!.username,
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
                       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Container(
-                          width: 8, height: 8,
-                          decoration: BoxDecoration(
-                            color: _user!.isOnline ? const Color(0xFF4DCA88) : const Color(0xFF8B9DB5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                        Text(_user!.username, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                        if (_user!.isVerified) ...[const SizedBox(width: 4), const Icon(Icons.verified, color: Color(0xFF2AABEE), size: 22)],
+                        if (_user!.isAdmin) ...[const SizedBox(width: 4), const Icon(Icons.shield, color: Color(0xFFFFD700), size: 22)],
+                      ]),
+                      const SizedBox(height: 6),
+                      if (_user!.isVerified)
+                        const Text('Верифицированный аккаунт', style: TextStyle(color: Color(0xFF2AABEE), fontSize: 13)),
+                      const SizedBox(height: 4),
+                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Container(width: 8, height: 8, decoration: BoxDecoration(
+                          color: _user!.isOnline ? const Color(0xFF4DCA88) : const Color(0xFF8B9DB5),
+                          shape: BoxShape.circle)),
                         const SizedBox(width: 6),
-                        Text(
-                          _user!.isOnline ? 'в сети' : _formatLastSeen(_user!.lastSeen),
-                          style: TextStyle(
-                            color: _user!.isOnline ? const Color(0xFF4DCA88) : const Color(0xFF8B9DB5),
-                            fontSize: 13,
-                          ),
-                        ),
+                        Text(_user!.isOnline ? 'в сети' : _formatLastSeen(_user!.lastSeen),
+                          style: TextStyle(color: _user!.isOnline ? const Color(0xFF4DCA88) : const Color(0xFF8B9DB5), fontSize: 13)),
                       ]),
                     ]),
                   ),
 
                   const SizedBox(height: 8),
 
-                  // Info
-                  Container(
-                    color: const Color(0xFF232E3C),
-                    child: Column(children: [
-                      if (_user!.bio != null && _user!.bio!.isNotEmpty) ...[
-                        _infoTile(Icons.info_outline, 'О себе', _user!.bio!),
-                        const Divider(height: 1, color: Color(0xFF17212B), indent: 54),
-                      ],
-                      _infoTile(Icons.access_time, 'Последний визит',
-                        _user!.isOnline ? 'Сейчас онлайн' : _formatLastSeen(_user!.lastSeen)),
-                    ]),
-                  ),
+                  Container(color: const Color(0xFF232E3C), child: Column(children: [
+                    if (_user!.bio != null && _user!.bio!.isNotEmpty) ...[
+                      _infoTile(Icons.info_outline, 'О себе', _user!.bio!),
+                      const Divider(height: 1, color: Color(0xFF17212B), indent: 54),
+                    ],
+                    _infoTile(Icons.access_time, 'Последний визит',
+                      _user!.isOnline ? 'Сейчас онлайн' : _formatLastSeen(_user!.lastSeen)),
+                  ])),
 
                   const SizedBox(height: 8),
 
-                  // Message button
-                  Container(
-                    color: const Color(0xFF232E3C),
-                    child: ListTile(
-                      leading: const Icon(Icons.send_rounded, color: Color(0xFF2AABEE)),
-                      title: const Text('Написать сообщение', style: TextStyle(color: Colors.white)),
-                      trailing: const Icon(Icons.chevron_right, color: Color(0xFF8B9DB5)),
-                      onTap: _startChat,
-                    ),
-                  ),
+                  Container(color: const Color(0xFF232E3C), child: ListTile(
+                    leading: const Icon(Icons.send_rounded, color: Color(0xFF2AABEE)),
+                    title: const Text('Написать сообщение', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.chevron_right, color: Color(0xFF8B9DB5)),
+                    onTap: _startChat,
+                  )),
                 ]),
     );
   }
@@ -142,11 +121,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   String _formatLastSeen(DateTime? dt) {
     if (dt == null) return 'Давно';
-    final now = DateTime.now();
-    final diff = now.difference(dt.toLocal());
+    final diff = DateTime.now().difference(dt.toLocal());
     if (diff.inMinutes < 1) return 'только что';
     if (diff.inMinutes < 60) return '${diff.inMinutes} мин. назад';
     if (diff.inHours < 24) return '${diff.inHours} ч. назад';
-    return DateFormat('d MMM', 'ru').format(dt.toLocal());
+    return DateFormat('d MMM').format(dt.toLocal());
   }
 }

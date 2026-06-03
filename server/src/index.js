@@ -10,6 +10,8 @@ const chatRoutes = require('./routes/chats');
 const messageRoutes = require('./routes/messages');
 const fileRoutes = require('./routes/files');
 const userRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin');
+const channelRoutes = require('./routes/channels');
 const socketHandler = require('./sockets/handler');
 
 const app = express();
@@ -23,8 +25,6 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
@@ -34,6 +34,8 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/channels', channelRoutes);
 
 socketHandler(io);
 

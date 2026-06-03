@@ -5,6 +5,8 @@ class User {
   final String? avatarUrl;
   final String? bio;
   final bool isOnline;
+  final bool isVerified;
+  final bool isAdmin;
   final DateTime? lastSeen;
 
   User({
@@ -14,25 +16,33 @@ class User {
     this.avatarUrl,
     this.bio,
     this.isOnline = false,
+    this.isVerified = false,
+    this.isAdmin = false,
     this.lastSeen,
   });
 
   factory User.fromJson(Map<String, dynamic> j) => User(
-        id: j['id'],
-        username: j['username'],
-        email: j['email'] ?? '',
-        avatarUrl: j['avatar_url'],
-        bio: j['bio'],
-        isOnline: j['is_online'] ?? false,
-        lastSeen: j['last_seen'] != null ? DateTime.tryParse(j['last_seen']) : null,
-      );
+    id: j['id'],
+    username: j['username'],
+    email: j['email'] ?? '',
+    avatarUrl: j['avatar_url'],
+    bio: j['bio'],
+    isOnline: j['is_online'] ?? false,
+    isVerified: j['is_verified'] ?? false,
+    isAdmin: j['is_admin'] ?? false,
+    lastSeen: j['last_seen'] != null ? DateTime.tryParse(j['last_seen']) : null,
+  );
 }
 
 class Chat {
   final String id;
   final String? name;
   final bool isGroup;
+  final bool isChannel;
   final String? avatarUrl;
+  final String? description;
+  final String? username;
+  final int memberCount;
   final String? lastMessage;
   final DateTime? lastMessageAt;
   final int unreadCount;
@@ -42,7 +52,11 @@ class Chat {
     required this.id,
     this.name,
     this.isGroup = false,
+    this.isChannel = false,
     this.avatarUrl,
+    this.description,
+    this.username,
+    this.memberCount = 0,
     this.lastMessage,
     this.lastMessageAt,
     this.unreadCount = 0,
@@ -50,14 +64,18 @@ class Chat {
   });
 
   factory Chat.fromJson(Map<String, dynamic> j) => Chat(
-        id: j['id'],
-        name: j['name'],
-        isGroup: j['is_group'] ?? false,
-        avatarUrl: j['avatar_url'],
-        lastMessage: j['last_message'],
-        lastMessageAt: j['last_message_at'] != null ? DateTime.tryParse(j['last_message_at']) : null,
-        unreadCount: int.tryParse(j['unread_count']?.toString() ?? '0') ?? 0,
-      );
+    id: j['id'],
+    name: j['name'],
+    isGroup: j['is_group'] ?? false,
+    isChannel: j['is_channel'] ?? false,
+    avatarUrl: j['avatar_url'],
+    description: j['description'],
+    username: j['username'],
+    memberCount: j['member_count'] ?? 0,
+    lastMessage: j['last_message'],
+    lastMessageAt: j['last_message_at'] != null ? DateTime.tryParse(j['last_message_at']) : null,
+    unreadCount: int.tryParse(j['unread_count']?.toString() ?? '0') ?? 0,
+  );
 }
 
 class Message {
@@ -65,7 +83,7 @@ class Message {
   final String chatId;
   final String senderId;
   final String? content;
-  final String messageType; // text, image, file, audio, video
+  final String messageType;
   final String? fileUrl;
   final String? fileName;
   final int? fileSize;
@@ -73,9 +91,11 @@ class Message {
   final String? replyTo;
   final bool isEdited;
   final bool isDeleted;
+  final int views;
   final DateTime createdAt;
   final String? senderUsername;
   final String? senderAvatar;
+  final bool senderVerified;
 
   Message({
     required this.id,
@@ -90,26 +110,30 @@ class Message {
     this.replyTo,
     this.isEdited = false,
     this.isDeleted = false,
+    this.views = 0,
     required this.createdAt,
     this.senderUsername,
     this.senderAvatar,
+    this.senderVerified = false,
   });
 
   factory Message.fromJson(Map<String, dynamic> j) => Message(
-        id: j['id'],
-        chatId: j['chat_id'],
-        senderId: j['sender_id'],
-        content: j['content'],
-        messageType: j['message_type'] ?? 'text',
-        fileUrl: j['file_url'],
-        fileName: j['file_name'],
-        fileSize: j['file_size'],
-        mimeType: j['mime_type'],
-        replyTo: j['reply_to'],
-        isEdited: j['is_edited'] ?? false,
-        isDeleted: j['is_deleted'] ?? false,
-        createdAt: DateTime.parse(j['created_at']),
-        senderUsername: j['sender_username'],
-        senderAvatar: j['sender_avatar'],
-      );
+    id: j['id'],
+    chatId: j['chat_id'],
+    senderId: j['sender_id'],
+    content: j['content'],
+    messageType: j['message_type'] ?? 'text',
+    fileUrl: j['file_url'],
+    fileName: j['file_name'],
+    fileSize: j['file_size'],
+    mimeType: j['mime_type'],
+    replyTo: j['reply_to'],
+    isEdited: j['is_edited'] ?? false,
+    isDeleted: j['is_deleted'] ?? false,
+    views: j['views'] ?? 0,
+    createdAt: DateTime.parse(j['created_at']),
+    senderUsername: j['sender_username'],
+    senderAvatar: j['sender_avatar'],
+    senderVerified: j['sender_verified'] ?? false,
+  );
 }

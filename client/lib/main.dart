@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
-import 'screens/chats_screen.dart';
+import 'screens/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,12 +32,8 @@ class VortexApp extends StatelessWidget {
           titleTextStyle: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
           iconTheme: IconThemeData(color: Color(0xFF8B9DB5)),
         ),
-        dividerColor: const Color(0xFF232E3C),
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(color: Colors.white),
-        ),
       ),
-      home: context.watch<AuthProvider>().isLoggedIn ? const ChatsScreen() : const LoginScreen(),
+      home: context.watch<AuthProvider>().isLoggedIn ? const MainScreen() : const LoginScreen(),
     );
   }
 }

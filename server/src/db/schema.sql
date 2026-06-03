@@ -11,16 +11,21 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT,
   is_online BOOLEAN DEFAULT false,
   last_seen TIMESTAMP DEFAULT NOW(),
+  is_verified BOOLEAN DEFAULT false,
+  is_admin BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Chats table (personal & group)
+-- Chats table
 CREATE TABLE IF NOT EXISTS chats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100),
   is_group BOOLEAN DEFAULT false,
+  is_channel BOOLEAN DEFAULT false,
   avatar_url TEXT,
   description TEXT,
+  username VARCHAR(50) UNIQUE,
+  member_count INTEGER DEFAULT 0,
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -48,11 +53,12 @@ CREATE TABLE IF NOT EXISTS messages (
   reply_to UUID REFERENCES messages(id),
   is_edited BOOLEAN DEFAULT false,
   is_deleted BOOLEAN DEFAULT false,
+  views INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Message reads (read receipts)
+-- Message reads
 CREATE TABLE IF NOT EXISTS message_reads (
   message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,

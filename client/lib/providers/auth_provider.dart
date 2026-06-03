@@ -24,9 +24,7 @@ class AuthProvider extends ChangeNotifier {
         _user = User.fromJson(data['user']);
         _socket.connect(_api.token!);
         notifyListeners();
-      } catch (_) {
-        await _api.clearToken();
-      }
+      } catch (_) { await _api.clearToken(); }
     }
   }
 
@@ -39,10 +37,7 @@ class AuthProvider extends ChangeNotifier {
       _socket.connect(data['token']);
       _loading = false; notifyListeners();
       return true;
-    } catch (e) {
-      _error = e.toString(); _loading = false; notifyListeners();
-      return false;
-    }
+    } catch (e) { _error = e.toString(); _loading = false; notifyListeners(); return false; }
   }
 
   Future<bool> register(String username, String email, String password) async {
@@ -54,16 +49,10 @@ class AuthProvider extends ChangeNotifier {
       _socket.connect(data['token']);
       _loading = false; notifyListeners();
       return true;
-    } catch (e) {
-      _error = e.toString(); _loading = false; notifyListeners();
-      return false;
-    }
+    } catch (e) { _error = e.toString(); _loading = false; notifyListeners(); return false; }
   }
 
-  void updateUser(User user) {
-    _user = user;
-    notifyListeners();
-  }
+  void updateUser(User user) { _user = user; notifyListeners(); }
 
   Future<void> logout() async {
     _socket.disconnect();
