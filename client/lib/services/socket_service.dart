@@ -19,29 +19,19 @@ class SocketService {
         .setReconnectionAttempts(10)
         .setReconnectionDelay(1000)
         .build());
-
     _socket!.connect();
-    _socket!.onConnect((_) {
-      print('✅ Socket connected');
-      _socket!.emit('join_chats');
-    });
-    _socket!.onDisconnect((_) => print('❌ Socket disconnected'));
-    _socket!.onConnectError((e) => print('Socket connect error: $e'));
+    _socket!.onConnect((_) { print('✅ Connected'); _socket!.emit('join_chats'); });
+    _socket!.onDisconnect((_) => print('❌ Disconnected'));
+    _socket!.onConnectError((e) => print('Connect error: $e'));
   }
 
   void joinChat(String chatId) => _socket?.emit('join_chat', {'chatId': chatId});
 
-  void disconnect() {
-    _socket?.disconnect();
-    _socket?.destroy();
-    _socket = null;
-  }
+  void disconnect() { _socket?.disconnect(); _socket?.destroy(); _socket = null; }
 
-  void sendMessage({
-    required String chatId, required String content,
-    String messageType = 'text', String? fileUrl,
-    String? fileName, int? fileSize, String? mimeType, String? replyTo,
-  }) {
+  void sendMessage({required String chatId, required String content,
+    String messageType = 'text', String? fileUrl, String? fileName,
+    int? fileSize, String? mimeType, String? replyTo}) {
     _socket?.emit('send_message', {
       'chatId': chatId, 'content': content, 'messageType': messageType,
       'fileUrl': fileUrl, 'fileName': fileName, 'fileSize': fileSize,
@@ -63,18 +53,6 @@ class SocketService {
 
   void callUser(String targetUserId, dynamic offer, String callType) =>
       _socket?.emit('call_user', {'targetUserId': targetUserId, 'offer': offer, 'callType': callType});
-
-  void answerCall(String targetUserId, dynamic answer) =>
-      _socket?.emit('call_answer', {'targetUserId': targetUserId, 'answer': answer});
-
-  void rejectCall(String targetUserId) =>
-      _socket?.emit('call_reject', {'targetUserId': targetUserId});
-
-  void sendIceCandidate(String targetUserId, dynamic candidate) =>
-      _socket?.emit('ice_candidate', {'targetUserId': targetUserId, 'candidate': candidate});
-
-  void endCall(String targetUserId) =>
-      _socket?.emit('end_call', {'targetUserId': targetUserId});
 
   void on(String event, Function(dynamic) handler) => _socket?.on(event, handler);
   void off(String event) => _socket?.off(event);

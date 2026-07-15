@@ -1,7 +1,0 @@
-[build]
-  base = "client"
-  command = "flutter build web --release"
-  publish = "client/build/web"
-
-[build.environment]
-  FLUTTER_VERSION = "3.32.1"

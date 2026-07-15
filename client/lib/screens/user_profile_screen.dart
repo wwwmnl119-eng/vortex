@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../providers/theme_provider.dart';
+import '../theme/app_theme.dart';
 import 'chat_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -31,95 +34,81 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     try {
       final chat = await _api.createDM(widget.userId);
       if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => ChatScreen(chatId: chat['id'], chatName: widget.username, targetUserId: widget.userId),
-      ));
+        builder: (_) => ChatScreen(chatId: chat['id'], chatName: widget.username, targetUserId: widget.userId)));
     } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDark;
+    final colors = AppColors(isDark);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF17212B),
+      backgroundColor: colors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF17212B),
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Color(0xFF2AABEE)), onPressed: () => Navigator.pop(context)),
-        title: Text(widget.username, style: const TextStyle(color: Colors.white)),
+        backgroundColor: colors.appBar,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.blue), onPressed: () => Navigator.pop(context)),
+        title: Text(widget.username, style: TextStyle(color: colors.textPrimary)),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2AABEE)))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.blue))
           : _user == null
-              ? const Center(child: Text('Пользователь не найден', style: TextStyle(color: Color(0xFF8B9DB5))))
+              ? Center(child: Text('Не найден', style: TextStyle(color: colors.textSecondary)))
               : Column(children: [
-                  Container(
-                    width: double.infinity, color: const Color(0xFF17212B),
-                    padding: const EdgeInsets.symmetric(vertical: 32),
+                  Container(width: double.infinity, color: colors.appBar, padding: const EdgeInsets.symmetric(vertical: 32),
                     child: Column(children: [
-                      CircleAvatar(
-                        radius: 52, backgroundColor: const Color(0xFF2AABEE),
+                      CircleAvatar(radius: 52, backgroundColor: AppColors.blue,
                         backgroundImage: _user!.avatarUrl != null ? NetworkImage(_user!.avatarUrl!) : null,
                         child: _user!.avatarUrl == null ? Text(_user!.username[0].toUpperCase(),
-                          style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)) : null,
-                      ),
+                          style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)) : null),
                       const SizedBox(height: 12),
                       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Text(_user!.username, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                        if (_user!.isVerified) ...[const SizedBox(width: 4), const Icon(Icons.verified, color: Color(0xFF2AABEE), size: 22)],
-                        if (_user!.isAdmin) ...[const SizedBox(width: 4), const Icon(Icons.shield, color: Color(0xFFFFD700), size: 22)],
+                        Text(_user!.username, style: TextStyle(color: colors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
+                        if (_user!.isVerified) ...[const SizedBox(width: 4), const Icon(Icons.verified, color: AppColors.blue, size: 22)],
+                        if (_user!.isAdmin) ...[const SizedBox(width: 4), const Icon(Icons.shield, color: AppColors.gold, size: 22)],
                       ]),
                       const SizedBox(height: 6),
-                      if (_user!.isVerified)
-                        const Text('Верифицированный аккаунт', style: TextStyle(color: Color(0xFF2AABEE), fontSize: 13)),
-                      const SizedBox(height: 4),
                       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Container(width: 8, height: 8, decoration: BoxDecoration(
-                          color: _user!.isOnline ? const Color(0xFF4DCA88) : const Color(0xFF8B9DB5),
-                          shape: BoxShape.circle)),
+                          color: _user!.isOnline ? AppColors.green : colors.textSecondary, shape: BoxShape.circle)),
                         const SizedBox(width: 6),
-                        Text(_user!.isOnline ? 'в сети' : _formatLastSeen(_user!.lastSeen),
-                          style: TextStyle(color: _user!.isOnline ? const Color(0xFF4DCA88) : const Color(0xFF8B9DB5), fontSize: 13)),
+                        Text(_user!.isOnline ? 'в сети' : _fmt(_user!.lastSeen),
+                          style: TextStyle(color: _user!.isOnline ? AppColors.green : colors.textSecondary, fontSize: 13)),
                       ]),
-                    ]),
-                  ),
-
+                    ])),
                   const SizedBox(height: 8),
-
-                  Container(color: const Color(0xFF232E3C), child: Column(children: [
-                    if (_user!.bio != null && _user!.bio!.isNotEmpty) ...[
-                      _infoTile(Icons.info_outline, 'О себе', _user!.bio!),
-                      const Divider(height: 1, color: Color(0xFF17212B), indent: 54),
+                  Container(color: colors.surface, child: Column(children: [
+                    if (_user!.bio?.isNotEmpty == true) ...[
+                      _tile(Icons.info_outline, 'О себе', _user!.bio!, colors),
+                      Divider(height: 1, color: colors.divider, indent: 54),
                     ],
-                    _infoTile(Icons.access_time, 'Последний визит',
-                      _user!.isOnline ? 'Сейчас онлайн' : _formatLastSeen(_user!.lastSeen)),
+                    _tile(Icons.access_time, 'Последний визит', _user!.isOnline ? 'Онлайн' : _fmt(_user!.lastSeen), colors),
                   ])),
-
                   const SizedBox(height: 8),
-
-                  Container(color: const Color(0xFF232E3C), child: ListTile(
-                    leading: const Icon(Icons.send_rounded, color: Color(0xFF2AABEE)),
-                    title: const Text('Написать сообщение', style: TextStyle(color: Colors.white)),
-                    trailing: const Icon(Icons.chevron_right, color: Color(0xFF8B9DB5)),
+                  Container(color: colors.surface, child: ListTile(
+                    leading: const Icon(Icons.send_rounded, color: AppColors.blue),
+                    title: Text('Написать сообщение', style: TextStyle(color: colors.textPrimary)),
+                    trailing: Icon(Icons.chevron_right, color: colors.textSecondary),
                     onTap: _startChat,
                   )),
                 ]),
     );
   }
 
-  Widget _infoTile(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  Widget _tile(IconData icon, String label, String value, AppColors colors) {
+    return Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: const Color(0xFF2AABEE), size: 22),
+        Icon(icon, color: AppColors.blue, size: 22),
         const SizedBox(width: 16),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label, style: const TextStyle(color: Color(0xFF8B9DB5), fontSize: 12)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 15)),
+          Text(value, style: TextStyle(color: colors.textPrimary, fontSize: 15)),
         ])),
-      ]),
-    );
+      ]));
   }
 
-  String _formatLastSeen(DateTime? dt) {
+  String _fmt(DateTime? dt) {
     if (dt == null) return 'Давно';
     final diff = DateTime.now().difference(dt.toLocal());
     if (diff.inMinutes < 1) return 'только что';

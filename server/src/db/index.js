@@ -9,11 +9,5 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-});
-
-module.exports = {
-  query: (text, params) => pool.query(text, params),
-  pool,
-};
+pool.on('error', (err) => console.error('DB error:', err));
+module.exports = { query: (text, params) => pool.query(text, params), pool };

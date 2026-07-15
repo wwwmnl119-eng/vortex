@@ -1,7 +1,5 @@
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Users table
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username VARCHAR(50) UNIQUE NOT NULL,
@@ -16,7 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Chats table
 CREATE TABLE IF NOT EXISTS chats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100),
@@ -30,7 +27,6 @@ CREATE TABLE IF NOT EXISTS chats (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Chat members
 CREATE TABLE IF NOT EXISTS chat_members (
   chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -39,7 +35,6 @@ CREATE TABLE IF NOT EXISTS chat_members (
   PRIMARY KEY (chat_id, user_id)
 );
 
--- Messages
 CREATE TABLE IF NOT EXISTS messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
@@ -58,7 +53,6 @@ CREATE TABLE IF NOT EXISTS messages (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Message reads
 CREATE TABLE IF NOT EXISTS message_reads (
   message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -66,7 +60,13 @@ CREATE TABLE IF NOT EXISTS message_reads (
   PRIMARY KEY (message_id, user_id)
 );
 
--- Refresh tokens
+CREATE TABLE IF NOT EXISTS message_deliveries (
+  message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  delivered_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (message_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -75,7 +75,15 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Indexes
+CREATE TABLE IF NOT EXISTS push_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  platform VARCHAR(20) DEFAULT 'web',
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, token)
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_members_user ON chat_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);

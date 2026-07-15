@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: vortex-server
+    name: vortex
     env: node
     rootDir: server
     buildCommand: npm install
@@ -16,6 +16,14 @@ services:
         generateValue: true
       - key: PORT
         value: 3000
+      - key: LATEST_VERSION
+        value: 1.0.0
+      - key: MIN_VERSION
+        value: 1.0.0
+      - key: FORCE_UPDATE
+        value: false
+      - key: CHANGELOG
+        value: Первый релиз Vortex
 
 databases:
   - name: vortex-db
