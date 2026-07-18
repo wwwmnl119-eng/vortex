@@ -11,6 +11,7 @@ import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/message_status_icon.dart';
+import '../widgets/user_badge.dart';
 import 'user_profile_screen.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -24,12 +25,15 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _ctrl = TextEditingController();
+  final _searchCtrl = TextEditingController();
   final _scroll = ScrollController();
   final _api = ApiService();
   final _socket = SocketService();
   List<Message> _messages = [];
+  List<Message> _pinned = [];
   bool _loading = true;
   bool _showAttach = false;
+  bool _showSearch = false;
   String? _typingUser;
   String? _myId;
 
@@ -38,6 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _myId = context.read<AuthProvider>().user?.id;
     _loadMessages();
+    _loadPinned();
     _socket.joinChat(widget.chatId);
     _setupSocket();
   }
@@ -51,51 +56,42 @@ class _ChatScreenState extends State<ChatScreen> {
         _socket.markRead(widget.chatId, [msg.id]);
       }
     });
-
     _socket.on('messages_delivered', (data) {
       if (data['chatId'] == widget.chatId && mounted) {
         final ids = List<String>.from(data['messageIds'] ?? []);
         setState(() {
           for (int i = 0; i < _messages.length; i++) {
             if (ids.contains(_messages[i].id) && _messages[i].senderId == _myId) {
-              final updated = _messages[i].deliveredTo;
-              updated.add(data['userId'] ?? '');
-              _messages[i] = _messages[i].copyWith(status: MessageStatus.delivered, deliveredTo: updated);
+              _messages[i] = _messages[i].copyWith(status: MessageStatus.delivered);
             }
           }
         });
       }
     });
-
     _socket.on('messages_read', (data) {
       if (data['chatId'] == widget.chatId && mounted) {
         final ids = List<String>.from(data['messageIds'] ?? []);
         setState(() {
           for (int i = 0; i < _messages.length; i++) {
             if (ids.contains(_messages[i].id) && _messages[i].senderId == _myId) {
-              final updated = _messages[i].readBy;
-              updated.add(data['userId'] ?? '');
-              _messages[i] = _messages[i].copyWith(status: MessageStatus.read, readBy: updated);
+              _messages[i] = _messages[i].copyWith(status: MessageStatus.read);
             }
           }
         });
       }
     });
-
     _socket.on('user_typing', (data) {
       if (data['chatId'] == widget.chatId && data['userId'] != _myId && mounted)
         setState(() => _typingUser = data['isTyping'] ? data['userId'] : null);
     });
-
     _socket.on('message_deleted', (data) {
       if (data['chatId'] == widget.chatId && mounted) {
         setState(() {
           final idx = _messages.indexWhere((m) => m.id == data['messageId']);
-          if (idx != -1) _messages[idx] = _messages[idx].copyWith(content: 'Сообщение удалено', isDeleted: true);
+          if (idx != -1) _messages[idx] = _messages[idx].copyWith(isDeleted: true, content: 'Сообщение удалено');
         });
       }
     });
-
     _socket.on('message_edited', (data) {
       final updated = Message.fromJson(Map<String, dynamic>.from(data));
       if (updated.chatId == widget.chatId && mounted) {
@@ -104,6 +100,18 @@ class _ChatScreenState extends State<ChatScreen> {
           if (idx != -1) _messages[idx] = updated;
         });
       }
+    });
+    _socket.on('message_reactions_updated', (data) {
+      if (data['chatId'] == widget.chatId && mounted) {
+        final reactions = (data['reactions'] as List).map((r) => Reaction.fromJson(Map<String, dynamic>.from(r))).toList();
+        setState(() {
+          final idx = _messages.indexWhere((m) => m.id == data['messageId']);
+          if (idx != -1) _messages[idx] = _messages[idx].copyWith(reactions: reactions);
+        });
+      }
+    });
+    _socket.on('message_pinned', (data) {
+      if (data['chatId'] == widget.chatId && mounted) _loadPinned();
     });
   }
 
@@ -118,6 +126,21 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
+  Future<void> _loadPinned() async {
+    try {
+      final data = await _api.get('/messages/${widget.chatId}/pinned') as List;
+      if (mounted) setState(() => _pinned = data.map((m) => Message.fromJson(m)).toList());
+    } catch (_) {}
+  }
+
+  Future<void> _searchMessages(String q) async {
+    if (q.isEmpty) { _loadMessages(); return; }
+    try {
+      final data = await _api.get('/messages/${widget.chatId}?search=${Uri.encodeComponent(q)}') as List;
+      if (mounted) setState(() => _messages = data.map((m) => Message.fromJson(m)).toList());
+    } catch (_) {}
+  }
+
   void _scrollToBottom() => Future.delayed(const Duration(milliseconds: 100), () {
     if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
   });
@@ -128,6 +151,10 @@ class _ChatScreenState extends State<ChatScreen> {
     _socket.sendMessage(chatId: widget.chatId, content: text);
     _ctrl.clear();
     _socket.sendTyping(widget.chatId, false);
+  }
+
+  Future<void> _sendVoice() async {
+    _snack('Голосовые сообщения доступны в мобильном приложении');
   }
 
   Future<void> _sendImage() async {
@@ -156,6 +183,20 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (_) { _snack('Ошибка загрузки'); }
   }
 
+  void _reactToMessage(Message msg, String emoji) {
+    _socket.on('react', null);
+    _socket.on('react_message', null);
+    (_socket as dynamic)._socket?.emit('react_message', {
+      'messageId': msg.id, 'chatId': widget.chatId, 'emoji': emoji,
+    });
+  }
+
+  void _pinMessage(Message msg) {
+    (_socket as dynamic)._socket?.emit('pin_message', {
+      'messageId': msg.id, 'chatId': widget.chatId, 'pinned': !msg.isPinned,
+    });
+  }
+
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(msg), backgroundColor: const Color(0xFF232E3C)));
 
@@ -164,7 +205,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _socket.off('new_message'); _socket.off('messages_delivered');
     _socket.off('messages_read'); _socket.off('user_typing');
     _socket.off('message_deleted'); _socket.off('message_edited');
-    _ctrl.dispose(); _scroll.dispose();
+    _socket.off('message_reactions_updated'); _socket.off('message_pinned');
+    _ctrl.dispose(); _searchCtrl.dispose(); _scroll.dispose();
     super.dispose();
   }
 
@@ -172,36 +214,43 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
     final colors = AppColors(isDark);
-
     return Scaffold(
       backgroundColor: colors.chatBg,
       appBar: AppBar(
         backgroundColor: colors.appBar,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Color(0xFF2AABEE)), onPressed: () => Navigator.pop(context)),
-        title: GestureDetector(
-          onTap: widget.targetUserId != null ? () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => UserProfileScreen(userId: widget.targetUserId!, username: widget.chatName))) : null,
-          child: Row(children: [
-            CircleAvatar(radius: 18, backgroundColor: const Color(0xFF2AABEE),
-              child: Text(widget.chatName[0].toUpperCase(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
-            const SizedBox(width: 10),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(widget.chatName, style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
-              Text(_typingUser != null ? 'печатает...' : 'нажмите для профиля',
-                style: TextStyle(color: _typingUser != null ? AppColors.blue : colors.textSecondary, fontSize: 11)),
-            ]),
-          ]),
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.blue), onPressed: () => Navigator.pop(context)),
+        title: _showSearch
+            ? TextField(
+                controller: _searchCtrl, autofocus: true,
+                style: TextStyle(color: colors.textPrimary),
+                onChanged: _searchMessages,
+                decoration: InputDecoration(hintText: 'Поиск...', hintStyle: TextStyle(color: colors.textSecondary), border: InputBorder.none),
+              )
+            : GestureDetector(
+                onTap: widget.targetUserId != null ? () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => UserProfileScreen(userId: widget.targetUserId!, username: widget.chatName))) : null,
+                child: Row(children: [
+                  CircleAvatar(radius: 18, backgroundColor: AppColors.blue,
+                    child: Text(widget.chatName[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
+                  const SizedBox(width: 10),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(widget.chatName, style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
+                    Text(_typingUser != null ? 'печатает...' : 'нажмите для профиля',
+                      style: TextStyle(color: _typingUser != null ? AppColors.blue : colors.textSecondary, fontSize: 11)),
+                  ]),
+                ]),
+              ),
         actions: [
+          IconButton(icon: Icon(_showSearch ? Icons.close : Icons.search, color: colors.textSecondary),
+            onPressed: () { setState(() { _showSearch = !_showSearch; if (!_showSearch) { _searchCtrl.clear(); _loadMessages(); } }); }),
           IconButton(icon: Icon(Icons.call_outlined, color: colors.textSecondary), onPressed: () {}),
-          IconButton(icon: Icon(Icons.more_vert, color: colors.textSecondary), onPressed: () {}),
         ],
       ),
       body: Column(children: [
+        if (_pinned.isNotEmpty) _pinnedBar(colors),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF2AABEE)))
+              ? const Center(child: CircularProgressIndicator(color: AppColors.blue))
               : _messages.isEmpty
                   ? Center(child: Text('Нет сообщений', style: TextStyle(color: colors.textSecondary)))
                   : GestureDetector(
@@ -226,15 +275,26 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _pinnedBar(AppColors colors) {
+    return Container(
+      color: colors.appBar,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(children: [
+        const Icon(Icons.push_pin, color: AppColors.blue, size: 16),
+        const SizedBox(width: 8),
+        Expanded(child: Text(_pinned.first.content ?? 'Закреплённое сообщение',
+          style: TextStyle(color: colors.textSecondary, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+      ]),
+    );
+  }
+
   Widget _dateDivider(DateTime dt, AppColors colors) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return Padding(padding: const EdgeInsets.symmetric(vertical: 8),
       child: Center(child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(color: colors.surface.withOpacity(0.7), borderRadius: BorderRadius.circular(12)),
         child: Text(_formatDate(dt), style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-      )),
-    );
+      )));
   }
 
   Widget _bubble(Message msg, AppColors colors) {
@@ -242,54 +302,73 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        onLongPress: isMe && !msg.isDeleted ? () => _msgOptions(msg) : null,
-        child: Container(
-          margin: EdgeInsets.only(top: 2, bottom: 2, left: isMe ? 60 : 0, right: isMe ? 0 : 60),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isMe ? colors.msgOut : colors.msgIn,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16), topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isMe ? 16 : 4),
-              bottomRight: Radius.circular(isMe ? 4 : 16),
+        onLongPress: () => _msgOptions(msg, isMe),
+        child: Column(crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
+          Container(
+            margin: EdgeInsets.only(top: 2, bottom: 2, left: isMe ? 60 : 0, right: isMe ? 0 : 60),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isMe ? colors.msgOut : colors.msgIn,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16), topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(isMe ? 16 : 4), bottomRight: Radius.circular(isMe ? 4 : 16)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
             ),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (!isMe && msg.senderUsername != null)
-              Padding(padding: const EdgeInsets.only(bottom: 4),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(msg.senderUsername!, style: const TextStyle(color: AppColors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
-                  if (msg.senderVerified) ...[const SizedBox(width: 3), const Icon(Icons.verified, color: AppColors.blue, size: 12)],
-                ])),
-            if (msg.messageType == 'image' && msg.fileUrl != null)
-              ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(msg.fileUrl!, width: 220, fit: BoxFit.cover))
-            else if (msg.messageType == 'file')
-              Row(children: [
-                Container(padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: AppColors.blue.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.insert_drive_file_outlined, color: AppColors.blue, size: 24)),
-                const SizedBox(width: 8),
-                Expanded(child: Text(msg.fileName ?? 'Файл', style: TextStyle(color: colors.msgInText, fontSize: 14))),
-              ])
-            else
-              Text(
-                msg.isDeleted ? '🗑 Сообщение удалено' : (msg.content ?? ''),
-                style: TextStyle(
-                  color: isMe ? Colors.white : (msg.isDeleted ? colors.textSecondary : colors.msgInText),
-                  fontSize: 14,
-                  fontStyle: msg.isDeleted ? FontStyle.italic : FontStyle.normal,
-                ),
-              ),
-            const SizedBox(height: 3),
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(DateFormat('HH:mm').format(msg.createdAt.toLocal()),
-                style: TextStyle(color: isMe ? Colors.white60 : colors.textSecondary, fontSize: 10)),
-              if (msg.isEdited) Text('  изм.', style: TextStyle(color: isMe ? Colors.white60 : colors.textSecondary, fontSize: 10)),
-              if (isMe) ...[const SizedBox(width: 4), MessageStatusIcon(status: msg.status, size: 14)],
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (!isMe && msg.senderUsername != null)
+                Padding(padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(msg.senderUsername!, style: const TextStyle(color: AppColors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 3),
+                    UserBadge(isVerified: msg.senderVerified, isDeveloper: msg.senderDeveloper, size: 11),
+                  ])),
+              if (msg.isPinned)
+                const Padding(padding: EdgeInsets.only(bottom: 4),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.push_pin, color: AppColors.blue, size: 11),
+                    SizedBox(width: 3),
+                    Text('Закреплено', style: TextStyle(color: AppColors.blue, fontSize: 10)),
+                  ])),
+              if (msg.messageType == 'image' && msg.fileUrl != null)
+                ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(msg.fileUrl!, width: 220, fit: BoxFit.cover))
+              else if (msg.messageType == 'file')
+                Row(children: [
+                  Container(padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: AppColors.blue.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.insert_drive_file_outlined, color: AppColors.blue, size: 24)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(msg.fileName ?? 'Файл', style: TextStyle(color: isMe ? Colors.white : colors.msgInText, fontSize: 14))),
+                ])
+              else
+                Text(msg.isDeleted ? '🗑 Сообщение удалено' : (msg.content ?? ''),
+                  style: TextStyle(
+                    color: isMe ? Colors.white : (msg.isDeleted ? colors.textSecondary : colors.msgInText),
+                    fontSize: 14, fontStyle: msg.isDeleted ? FontStyle.italic : FontStyle.normal)),
+              const SizedBox(height: 3),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(DateFormat('HH:mm').format(msg.createdAt.toLocal()),
+                  style: TextStyle(color: isMe ? Colors.white60 : colors.textSecondary, fontSize: 10)),
+                if (msg.isEdited) Text('  изм.', style: TextStyle(color: isMe ? Colors.white60 : colors.textSecondary, fontSize: 10)),
+                if (isMe) ...[const SizedBox(width: 4), MessageStatusIcon(status: msg.status, size: 14)],
+              ]),
             ]),
-          ]),
-        ),
+          ),
+          // Reactions
+          if (msg.reactions.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(left: isMe ? 0 : 8, right: isMe ? 8 : 0, bottom: 4),
+              child: Wrap(spacing: 4, children: msg.reactions.map((r) => GestureDetector(
+                onTap: () => _reactToMessage(msg, r.emoji),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: colors.surface, borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colors.border)),
+                  child: Text('${r.emoji} ${r.count}', style: const TextStyle(fontSize: 12)),
+                ),
+              )).toList()),
+            ),
+        ]),
       ),
     );
   }
@@ -300,6 +379,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
         _attachBtn(Icons.image_outlined, 'Фото', _sendImage, colors),
         _attachBtn(Icons.insert_drive_file_outlined, 'Файл', _sendFile, colors),
+        _attachBtn(Icons.mic_outlined, 'Голос', _sendVoice, colors),
       ]),
     );
   }
@@ -313,16 +393,33 @@ class _ChatScreenState extends State<ChatScreen> {
     ]));
   }
 
-  void _msgOptions(Message msg) {
-    showModalBottomSheet(context: context, backgroundColor: context.read<ThemeProvider>().isDark ? const Color(0xFF232E3C) : Colors.white,
+  void _msgOptions(Message msg, bool isMe) {
+    final isDark = context.read<ThemeProvider>().isDark;
+    showModalBottomSheet(
+      context: context, backgroundColor: isDark ? const Color(0xFF232E3C) : Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 8),
         Container(width: 36, height: 4, decoration: BoxDecoration(color: const Color(0xFF8B9DB5), borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 8),
-        ListTile(leading: const Icon(Icons.edit_outlined, color: AppColors.blue),
-          title: const Text('Редактировать'), onTap: () { Navigator.pop(context); _editMsg(msg); }),
-        ListTile(leading: const Icon(Icons.delete_outline, color: AppColors.red),
+        // Reactions row
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: ['👍','❤️','😂','😮','😢','🔥'].map((emoji) => GestureDetector(
+              onTap: () { Navigator.pop(context); _reactToMessage(msg, emoji); },
+              child: Text(emoji, style: const TextStyle(fontSize: 28)),
+            )).toList())),
+        const Divider(height: 1),
+        if (isMe && !msg.isDeleted) ListTile(
+          leading: const Icon(Icons.edit_outlined, color: AppColors.blue),
+          title: const Text('Редактировать'),
+          onTap: () { Navigator.pop(context); _editMsg(msg); }),
+        ListTile(
+          leading: Icon(msg.isPinned ? Icons.push_pin_outlined : Icons.push_pin, color: AppColors.blue),
+          title: Text(msg.isPinned ? 'Открепить' : 'Закрепить'),
+          onTap: () { Navigator.pop(context); _pinMessage(msg); }),
+        if (isMe && !msg.isDeleted) ListTile(
+          leading: const Icon(Icons.delete_outline, color: AppColors.red),
           title: const Text('Удалить', style: TextStyle(color: AppColors.red)),
           onTap: () { Navigator.pop(context); _socket.deleteMessage(msg.id, widget.chatId); }),
         const SizedBox(height: 8),
@@ -350,23 +447,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _inputBar(AppColors colors) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      color: colors.appBar,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), color: colors.appBar,
       child: Row(children: [
         IconButton(icon: Icon(_showAttach ? Icons.close : Icons.attach_file, color: colors.textSecondary),
           onPressed: () => setState(() => _showAttach = !_showAttach)),
         Expanded(child: Container(
           decoration: BoxDecoration(color: colors.inputBg, borderRadius: BorderRadius.circular(24)),
           child: TextField(
-            controller: _ctrl,
-            style: TextStyle(color: colors.textPrimary, fontSize: 15),
+            controller: _ctrl, style: TextStyle(color: colors.textPrimary, fontSize: 15),
             maxLines: null,
             onChanged: (v) => _socket.sendTyping(widget.chatId, v.isNotEmpty),
             decoration: InputDecoration(
               hintText: 'Сообщение...', hintStyle: TextStyle(color: colors.textSecondary),
-              border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              fillColor: Colors.transparent,
-            ),
+              border: InputBorder.none, fillColor: Colors.transparent,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
           ),
         )),
         const SizedBox(width: 8),

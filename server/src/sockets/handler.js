@@ -19,17 +19,17 @@ module.exports = (io) => {
     await db.query('UPDATE users SET is_online=true WHERE id=$1', [socket.userId]);
     io.emit('user_online', { userId: socket.userId });
 
-    // Auto-join rooms + mark pending as delivered
+    // Auto-join rooms
     try {
       const { rows } = await db.query('SELECT chat_id FROM chat_members WHERE user_id=$1', [socket.userId]);
       rows.forEach(r => socket.join(r.chat_id));
 
+      // Mark pending as delivered
       const { rows: pending } = await db.query(
         `SELECT DISTINCT m.id, m.chat_id FROM messages m
-         JOIN chat_members cm ON cm.chat_id = m.chat_id
+         JOIN chat_members cm ON cm.chat_id=m.chat_id
          WHERE cm.user_id=$1 AND m.sender_id!=$1 AND m.is_deleted=false
-         AND m.id NOT IN (SELECT message_id FROM message_deliveries WHERE user_id=$1)
-         LIMIT 100`,
+         AND m.id NOT IN (SELECT message_id FROM message_deliveries WHERE user_id=$1) LIMIT 100`,
         [socket.userId]
       );
       for (const msg of pending) {
@@ -62,8 +62,13 @@ module.exports = (io) => {
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
           [chatId, socket.userId, content, messageType, fileUrl, fileName, fileSize, mimeType, replyTo || null]
         );
-        const { rows: user } = await db.query('SELECT username, avatar_url, is_verified FROM users WHERE id=$1', [socket.userId]);
-        const fullMsg = { ...rows[0], sender_username: user[0].username, sender_avatar: user[0].avatar_url, sender_verified: user[0].is_verified };
+        const { rows: user } = await db.query(
+          'SELECT username, avatar_url, is_verified, is_developer FROM users WHERE id=$1', [socket.userId]);
+        const fullMsg = {
+          ...rows[0], reactions: [],
+          sender_username: user[0].username, sender_avatar: user[0].avatar_url,
+          sender_verified: user[0].is_verified, sender_developer: user[0].is_developer
+        };
         io.to(chatId).emit('new_message', fullMsg);
 
         // Auto-deliver to online members
@@ -79,7 +84,8 @@ module.exports = (io) => {
       } catch (err) { console.error('send_message error:', err); socket.emit('error', { message: 'Failed to send' }); }
     });
 
-    socket.on('typing', ({ chatId, isTyping }) => socket.to(chatId).emit('user_typing', { userId: socket.userId, chatId, isTyping }));
+    socket.on('typing', ({ chatId, isTyping }) =>
+      socket.to(chatId).emit('user_typing', { userId: socket.userId, chatId, isTyping }));
 
     socket.on('read_messages', async ({ chatId, messageIds }) => {
       try {
@@ -103,11 +109,35 @@ module.exports = (io) => {
       } catch (err) { console.error('edit error:', err); }
     });
 
+    socket.on('react_message', async ({ messageId, chatId, emoji }) => {
+      try {
+        const { rows: existing } = await db.query('SELECT id FROM message_reactions WHERE message_id=$1 AND user_id=$2 AND emoji=$3', [messageId, socket.userId, emoji]);
+        if (existing[0]) {
+          await db.query('DELETE FROM message_reactions WHERE message_id=$1 AND user_id=$2 AND emoji=$3', [messageId, socket.userId, emoji]);
+        } else {
+          await db.query('INSERT INTO message_reactions (message_id, user_id, emoji) VALUES ($1,$2,$3)', [messageId, socket.userId, emoji]);
+        }
+        const { rows: reactions } = await db.query(
+          'SELECT emoji, COUNT(*) as count, array_agg(user_id) as user_ids FROM message_reactions WHERE message_id=$1 GROUP BY emoji',
+          [messageId]
+        );
+        io.to(chatId).emit('message_reactions_updated', { messageId, chatId, reactions });
+      } catch (err) { console.error('react error:', err); }
+    });
+
+    socket.on('pin_message', async ({ messageId, chatId, pinned }) => {
+      try {
+        await db.query('UPDATE messages SET is_pinned=$1 WHERE id=$2', [pinned, messageId]);
+        io.to(chatId).emit('message_pinned', { messageId, chatId, pinned });
+      } catch (err) { console.error('pin error:', err); }
+    });
+
     socket.on('register_push_token', async ({ token, platform }) => {
       try { await db.query('INSERT INTO push_tokens (user_id, token, platform) VALUES ($1,$2,$3) ON CONFLICT (user_id, token) DO NOTHING', [socket.userId, token, platform || 'web']); }
       catch (err) { console.error('push token error:', err); }
     });
 
+    // WebRTC
     socket.on('call_user', ({ targetUserId, offer, callType }) => {
       const t = onlineUsers.get(targetUserId);
       if (t) io.to(t).emit('incoming_call', { from: socket.userId, offer, callType });
