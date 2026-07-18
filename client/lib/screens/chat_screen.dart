@@ -55,7 +55,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _scrollToBottom();
         _socket.markRead(widget.chatId, [msg.id]);
       }
-    });
+
     _socket.on('messages_delivered', (data) {
       if (data['chatId'] == widget.chatId && mounted) {
         final ids = List<String>.from(data['messageIds'] ?? []);
@@ -65,9 +65,9 @@ class _ChatScreenState extends State<ChatScreen> {
               _messages[i] = _messages[i].copyWith(status: MessageStatus.delivered);
             }
           }
-        });
+    
       }
-    });
+
     _socket.on('messages_read', (data) {
       if (data['chatId'] == widget.chatId && mounted) {
         final ids = List<String>.from(data['messageIds'] ?? []);
@@ -77,42 +77,42 @@ class _ChatScreenState extends State<ChatScreen> {
               _messages[i] = _messages[i].copyWith(status: MessageStatus.read);
             }
           }
-        });
+    
       }
-    });
+
     _socket.on('user_typing', (data) {
       if (data['chatId'] == widget.chatId && data['userId'] != _myId && mounted)
         setState(() => _typingUser = data['isTyping'] ? data['userId'] : null);
-    });
+
     _socket.on('message_deleted', (data) {
       if (data['chatId'] == widget.chatId && mounted) {
         setState(() {
           final idx = _messages.indexWhere((m) => m.id == data['messageId']);
           if (idx != -1) _messages[idx] = _messages[idx].copyWith(isDeleted: true, content: 'Сообщение удалено');
-        });
+    
       }
-    });
+
     _socket.on('message_edited', (data) {
       final updated = Message.fromJson(Map<String, dynamic>.from(data));
       if (updated.chatId == widget.chatId && mounted) {
         setState(() {
           final idx = _messages.indexWhere((m) => m.id == updated.id);
           if (idx != -1) _messages[idx] = updated;
-        });
+    
       }
-    });
+
     _socket.on('message_reactions_updated', (data) {
       if (data['chatId'] == widget.chatId && mounted) {
         final reactions = (data['reactions'] as List).map((r) => Reaction.fromJson(Map<String, dynamic>.from(r))).toList();
         setState(() {
           final idx = _messages.indexWhere((m) => m.id == data['messageId']);
           if (idx != -1) _messages[idx] = _messages[idx].copyWith(reactions: reactions);
-        });
+    
       }
-    });
+
     _socket.on('message_pinned', (data) {
       if (data['chatId'] == widget.chatId && mounted) _loadPinned();
-    });
+
   }
 
   Future<void> _loadMessages() async {
@@ -184,17 +184,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _reactToMessage(Message msg, String emoji) {
-    _socket.on('react', null);
-    _socket.on('react_message', null);
-    (_socket as dynamic)._socket?.emit('react_message', {
-      'messageId': msg.id, 'chatId': widget.chatId, 'emoji': emoji,
-    });
+    _socket.emitReact(msg.id, widget.chatId, emoji);
+
+
+
+
+
   }
 
   void _pinMessage(Message msg) {
     (_socket as dynamic)._socket?.emit('pin_message', {
       'messageId': msg.id, 'chatId': widget.chatId, 'pinned': !msg.isPinned,
-    });
+
   }
 
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(

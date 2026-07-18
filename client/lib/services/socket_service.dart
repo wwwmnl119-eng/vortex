@@ -57,3 +57,9 @@ class SocketService {
   void on(String event, Function(dynamic) handler) => _socket?.on(event, handler);
   void off(String event) => _socket?.off(event);
 }
+
+  void emitReact(String messageId, String chatId, String emoji) =>
+      _socket?.emit('react_message', {'messageId': messageId, 'chatId': chatId, 'emoji': emoji});
+
+  void emitPin(String messageId, String chatId, bool pinned) =>
+      _socket?.emit('pin_message', {'messageId': messageId, 'chatId': chatId, 'pinned': pinned});
