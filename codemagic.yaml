@@ -10,8 +10,8 @@ workflows:
     triggering:
       events:
         - push
-      branches:
-        - main
+      branch_patterns:
+        - pattern: 'main'
     scripts:
       - name: Install dependencies
         script: |
@@ -22,4 +22,4 @@ workflows:
           cd client
           flutter build ipa --release --no-codesign
     artifacts:
-      - build/ios/ipa/*.ipa
+      - client/build/ios/ipa/*.ipa
