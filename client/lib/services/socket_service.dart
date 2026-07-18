@@ -30,8 +30,8 @@ class SocketService {
   void disconnect() { _socket?.disconnect(); _socket?.destroy(); _socket = null; }
 
   void sendMessage({required String chatId, required String content,
-    String messageType = 'text', String? fileUrl, String? fileName,
-    int? fileSize, String? mimeType, String? replyTo}) {
+      String messageType = 'text', String? fileUrl, String? fileName,
+      int? fileSize, String? mimeType, String? replyTo}) {
     _socket?.emit('send_message', {
       'chatId': chatId, 'content': content, 'messageType': messageType,
       'fileUrl': fileUrl, 'fileName': fileName, 'fileSize': fileSize,
@@ -51,15 +51,15 @@ class SocketService {
   void editMessage(String messageId, String chatId, String content) =>
       _socket?.emit('edit_message', {'messageId': messageId, 'chatId': chatId, 'content': content});
 
+  void emitReact(String messageId, String chatId, String emoji) =>
+      _socket?.emit('react_message', {'messageId': messageId, 'chatId': chatId, 'emoji': emoji});
+
+  void emitPin(String messageId, String chatId, bool pinned) =>
+      _socket?.emit('pin_message', {'messageId': messageId, 'chatId': chatId, 'pinned': pinned});
+
   void callUser(String targetUserId, dynamic offer, String callType) =>
       _socket?.emit('call_user', {'targetUserId': targetUserId, 'offer': offer, 'callType': callType});
 
   void on(String event, Function(dynamic) handler) => _socket?.on(event, handler);
   void off(String event) => _socket?.off(event);
 }
-
-  void emitReact(String messageId, String chatId, String emoji) =>
-      _socket?.emit('react_message', {'messageId': messageId, 'chatId': chatId, 'emoji': emoji});
-
-  void emitPin(String messageId, String chatId, bool pinned) =>
-      _socket?.emit('pin_message', {'messageId': messageId, 'chatId': chatId, 'pinned': pinned});
