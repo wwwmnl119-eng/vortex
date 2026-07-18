@@ -17,9 +17,33 @@ workflows:
         script: |
           cd client
           flutter pub get
-      - name: Build iOS IPA
+
+      - name: Build iOS archive (no codesign)
         script: |
           cd client
           flutter build ipa --release --no-codesign
+
+      - name: Package unsigned IPA manually
+        script: |
+          cd client
+          ARCHIVE_PATH=$(find build/ios/archive -name "*.xcarchive" | head -n 1)
+          APP_PATH=$(find "$ARCHIVE_PATH/Products/Applications" -name "*.app" | head -n 1)
+          
+          mkdir -p build/ios/ipa/Payload
+          cp -r "$APP_PATH" build/ios/ipa/Payload/
+          
+          cd build/ios/ipa
+          zip -r unsigned.ipa Payload
+          rm -rf Payload
+
     artifacts:
       - client/build/ios/ipa/*.ipa
+      - client/build/ios/archive/*.xcarchive
+
+    publishing:
+      email:
+        recipients:
+          - wwwmnl119@gmail.com
+        notify:
+          success: true
+          failure: true
